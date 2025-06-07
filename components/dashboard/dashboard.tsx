@@ -3,16 +3,28 @@
 import { useTodoStore } from '@/lib/store';
 import { TaskList } from '@/components/tasks/task-list';
 import { Card, CardContent } from '@/components/ui/card';
-import { Target, TrendingUp, CheckCircle2, Clock } from 'lucide-react';
+import { Target, TrendingUp, CheckCircle2, Clock, AlertTriangle } from 'lucide-react';
+import { isToday, isPast } from 'date-fns';
 
 export function Dashboard() {
   const { tasks } = useTodoStore();
   
-  const totalTasks = tasks.length;
-  const completedTasks = tasks.filter(t => t.completed).length;
-  const activeTasks = tasks.filter(t => !t.completed).length;
-  const completionRate = totalTasks > 0 
-    ? Math.round((completedTasks / totalTasks) * 100) 
+  // Filter tasks for today and overdue
+  const today = new Date().toISOString().split('T')[0];
+  const todayTasks = tasks.filter(task => 
+    task.dueDate === today
+  );
+  const overdueTasks = tasks.filter(task => 
+    task.dueDate && task.dueDate < today && !task.completed
+  );
+  
+  // Combine today and overdue tasks for display
+  const displayTasks = [...overdueTasks, ...todayTasks];
+  
+  const todayCompletedTasks = todayTasks.filter(t => t.completed).length;
+  const todayActiveTasks = todayTasks.filter(t => !t.completed).length;
+  const todayCompletionRate = todayTasks.length > 0 
+    ? Math.round((todayCompletedTasks / todayTasks.length) * 100) 
     : 0;
 
   return (
@@ -20,10 +32,12 @@ export function Dashboard() {
       {/* Welcome Header */}
       <div className="text-center py-4">
         <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">
-          Good morning! 👋
+          Today's Focus 🌅
         </h1>
         <p className="text-gray-600 dark:text-gray-400">
-          Let's make today productive and amazing
+          {todayTasks.length === 0 
+            ? "No tasks scheduled for today. Time to plan ahead!" 
+            : `${todayActiveTasks} tasks to complete today`}
         </p>
       </div>
 
@@ -35,10 +49,10 @@ export function Dashboard() {
               <Target className="h-5 w-5 text-blue-600 dark:text-blue-400" />
             </div>
             <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-              {completionRate}%
+              {todayCompletionRate}%
             </div>
             <div className="text-xs text-gray-500 dark:text-gray-400">
-              Complete
+              Today's Progress
             </div>
           </CardContent>
         </Card>
@@ -49,10 +63,10 @@ export function Dashboard() {
               <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400" />
             </div>
             <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-              {completedTasks}
+              {todayCompletedTasks}
             </div>
             <div className="text-xs text-gray-500 dark:text-gray-400">
-              Completed
+              Completed Today
             </div>
           </CardContent>
         </Card>
@@ -63,24 +77,24 @@ export function Dashboard() {
               <Clock className="h-5 w-5 text-orange-600 dark:text-orange-400" />
             </div>
             <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-              {activeTasks}
+              {todayActiveTasks}
             </div>
             <div className="text-xs text-gray-500 dark:text-gray-400">
-              Active
+              Remaining Today
             </div>
           </CardContent>
         </Card>
 
         <Card className="card-modern">
           <CardContent className="p-4 text-center">
-            <div className="flex items-center justify-center w-10 h-10 rounded-full bg-purple-100 dark:bg-purple-900/30 mx-auto mb-2">
-              <TrendingUp className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+            <div className="flex items-center justify-center w-10 h-10 rounded-full bg-red-100 dark:bg-red-900/30 mx-auto mb-2">
+              <AlertTriangle className="h-5 w-5 text-red-600 dark:text-red-400" />
             </div>
             <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-              {totalTasks}
+              {overdueTasks.length}
             </div>
             <div className="text-xs text-gray-500 dark:text-gray-400">
-              Total
+              Overdue
             </div>
           </CardContent>
         </Card>
@@ -90,19 +104,36 @@ export function Dashboard() {
       <Card className="card-modern">
         <CardContent className="p-6">
           <div className="flex items-center gap-3 mb-6">
-            <div className="p-2 rounded-xl bg-gradient-to-r from-blue-500/10 to-purple-500/10">
-              <CheckCircle2 className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+            <div className="p-2 rounded-xl bg-gradient-to-r from-orange-500/10 to-yellow-500/10">
+              <CheckCircle2 className="h-6 w-6 text-orange-600 dark:text-orange-400" />
             </div>
             <div>
               <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
-                Your Tasks
+                Today's Tasks
               </h2>
               <p className="text-sm text-gray-600 dark:text-gray-400">
-                Manage and organize your work
+                {overdueTasks.length > 0 
+                  ? `Including ${overdueTasks.length} overdue task${overdueTasks.length > 1 ? 's' : ''}`
+                  : "Focus on what matters today"}
               </p>
             </div>
           </div>
-          <TaskList tasks={tasks} />
+          
+          {displayTasks.length > 0 ? (
+            <TaskList tasks={displayTasks} />
+          ) : (
+            <div className="text-center py-12">
+              <div className="w-16 h-16 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center mx-auto mb-4">
+                <CheckCircle2 className="h-8 w-8 text-gray-400" />
+              </div>
+              <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
+                No tasks for today
+              </h3>
+              <p className="text-gray-600 dark:text-gray-400 mb-4">
+                You're all caught up! Time to plan for tomorrow or take a well-deserved break.
+              </p>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

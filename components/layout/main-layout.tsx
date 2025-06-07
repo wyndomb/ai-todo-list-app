@@ -9,7 +9,7 @@ import { CalendarView } from '@/components/dashboard/calendar-view';
 import { InsightsDashboard } from '@/components/dashboard/insights-dashboard';
 import { cn } from '@/lib/utils';
 import { 
-  CheckSquare, 
+  Sun, 
   CalendarDays, 
   BarChart3,
   Menu,
@@ -25,13 +25,13 @@ import {
 export function MainLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [aiPanelOpen, setAiPanelOpen] = useState(false);
-  const [activeView, setActiveView] = useState<'tasks' | 'calendar' | 'insights'>('tasks');
+  const [activeView, setActiveView] = useState<'today' | 'calendar' | 'insights'>('today');
 
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
   const toggleAiPanel = () => setAiPanelOpen(!aiPanelOpen);
 
   const navigationItems = [
-    { id: 'tasks', icon: CheckSquare, label: 'Tasks', color: 'text-blue-500' },
+    { id: 'today', icon: Sun, label: 'Today', color: 'text-orange-500' },
     { id: 'calendar', icon: CalendarDays, label: 'Calendar', color: 'text-green-500' },
     { id: 'insights', icon: BarChart3, label: 'Insights', color: 'text-purple-500' }
   ];
