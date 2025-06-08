@@ -1,13 +1,23 @@
 "use client";
 
+import { useState } from 'react';
 import { useTodoStore } from '@/lib/store';
 import { TaskList } from '@/components/tasks/task-list';
 import { Card, CardContent } from '@/components/ui/card';
-import { Target, TrendingUp, CheckCircle2, Clock, AlertTriangle } from 'lucide-react';
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from '@/components/ui/select';
+import { Target, TrendingUp, CheckCircle2, Clock, AlertTriangle, Filter } from 'lucide-react';
 import { isToday, isPast } from 'date-fns';
 
 export function Dashboard() {
-  const { tasks } = useTodoStore();
+  const { tasks, categories, setFilter, filterBy } = useTodoStore();
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [selectedPriority, setSelectedPriority] = useState<string>('all');
   
   // Filter tasks for today and overdue
   const today = new Date().toISOString().split('T')[0];
@@ -26,6 +36,16 @@ export function Dashboard() {
   const todayCompletionRate = todayTasks.length > 0 
     ? Math.round((todayCompletedTasks / todayTasks.length) * 100) 
     : 0;
+
+  const handleCategoryChange = (value: string) => {
+    setSelectedCategory(value);
+    setFilter({ category: value === 'all' ? null : value });
+  };
+
+  const handlePriorityChange = (value: string) => {
+    setSelectedPriority(value);
+    setFilter({ priority: value === 'all' ? null : value });
+  };
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -98,6 +118,67 @@ export function Dashboard() {
             </div>
           </CardContent>
         </Card>
+      </div>
+
+      {/* Task Filters */}
+      <div className="flex items-center gap-4 mb-6">
+        <div className="flex items-center gap-2">
+          <Filter className="h-4 w-4 text-gray-500" />
+          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Filters:</span>
+        </div>
+        
+        <Select value={selectedCategory} onValueChange={handleCategoryChange}>
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="All Categories" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Categories</SelectItem>
+            {categories.map(category => (
+              <SelectItem key={category.id} value={category.name}>
+                <div className="flex items-center gap-2">
+                  <div 
+                    className="w-2 h-2 rounded-full"
+                    style={{ backgroundColor: category.color }}
+                  />
+                  {category.name}
+                </div>
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        <Select value={selectedPriority} onValueChange={handlePriorityChange}>
+          <SelectTrigger className="w-[150px]">
+            <SelectValue placeholder="All Priorities" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Priorities</SelectItem>
+            <SelectItem value="low">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-green-400"></div>
+                Low
+              </div>
+            </SelectItem>
+            <SelectItem value="medium">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-yellow-400"></div>
+                Medium
+              </div>
+            </SelectItem>
+            <SelectItem value="high">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-orange-400"></div>
+                High
+              </div>
+            </SelectItem>
+            <SelectItem value="urgent">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-red-400"></div>
+                Urgent
+              </div>
+            </SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       {/* Main Task List */}

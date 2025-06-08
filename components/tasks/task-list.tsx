@@ -6,15 +6,8 @@ import { TaskItem } from '@/components/tasks/task-item';
 import { Button } from '@/components/ui/button';
 import { useTodoStore } from '@/lib/store';
 import { isPast, isToday, addDays, isFuture } from 'date-fns';
-import { 
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from '@/components/ui/select';
 import { AddTaskDialog } from '@/components/tasks/add-task-dialog';
-import { Plus, Filter } from 'lucide-react';
+import { Plus } from 'lucide-react';
 
 interface TaskListProps {
   tasks: Task[];
@@ -22,13 +15,27 @@ interface TaskListProps {
 
 export function TaskList({ tasks }: TaskListProps) {
   const [showAddTask, setShowAddTask] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState<string>('all');
-  const { categories } = useTodoStore();
+  const { filterBy } = useTodoStore();
 
-  // Filter tasks by category
-  const filteredTasks = selectedCategory === 'all' 
-    ? tasks 
-    : tasks.filter(task => task.category === selectedCategory);
+  // Apply filters from the store
+  const filteredTasks = tasks.filter(task => {
+    // Category filter
+    if (filterBy.category && task.category !== filterBy.category) {
+      return false;
+    }
+    
+    // Priority filter
+    if (filterBy.priority && task.priority !== filterBy.priority) {
+      return false;
+    }
+    
+    // Search filter
+    if (filterBy.search && !task.title.toLowerCase().includes(filterBy.search.toLowerCase())) {
+      return false;
+    }
+    
+    return true;
+  });
 
   // Group tasks by status
   const today = new Date().toISOString().split('T')[0];
@@ -76,40 +83,6 @@ export function TaskList({ tasks }: TaskListProps) {
 
   return (
     <div className="relative">
-      <div className="flex items-center justify-between mb-6">
-        <Select 
-          value={selectedCategory} 
-          onValueChange={setSelectedCategory}
-        >
-          <SelectTrigger className="w-[180px]">
-            <Filter className="h-4 w-4 mr-2" />
-            <SelectValue placeholder="Filter by category" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Categories</SelectItem>
-            {categories.map(category => (
-              <SelectItem key={category.id} value={category.name}>
-                <div className="flex items-center gap-2">
-                  <div 
-                    className="w-2 h-2 rounded-full"
-                    style={{ backgroundColor: category.color }}
-                  />
-                  {category.name}
-                </div>
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
-        <Button 
-          onClick={() => setShowAddTask(true)}
-          className="gap-2"
-        >
-          <Plus className="h-4 w-4" />
-          New Task
-        </Button>
-      </div>
-
       <div className="space-y-8">
         {renderTaskGroup(focusTasks, "Focus for Today", "⚡️")}
         {renderTaskGroup(dueSoonTasks, "Due Soon", "⏳")}
@@ -122,7 +95,15 @@ export function TaskList({ tasks }: TaskListProps) {
         
         {filteredTasks.length === 0 && (
           <div className="text-center py-12 text-muted-foreground">
-            <p>No tasks found in this category</p>
+            <p>No tasks found matching the current filters</p>
+            <Button 
+              onClick={() => setShowAddTask(true)}
+              className="gap-2 mt-4"
+              variant="outline"
+            >
+              <Plus className="h-4 w-4" />
+              Add New Task
+            </Button>
           </div>
         )}
       </div>
