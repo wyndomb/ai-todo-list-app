@@ -196,7 +196,7 @@ export function Dashboard() {
             />
             {selectedDate && (
               <div className="mt-3 text-center">
-                <Badge variant="outline" className="text-xs">
+                <Badge variant="outline\" className="text-xs">
                   {displayTasks.length} task{displayTasks.length === 1 ? '' : 's'} on {format(selectedDate, 'MMM d')}
                 </Badge>
               </div>
