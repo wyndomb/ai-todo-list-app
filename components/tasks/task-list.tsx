@@ -5,7 +5,7 @@ import { Task } from '@/lib/types';
 import { TaskItem } from '@/components/tasks/task-item';
 import { Button } from '@/components/ui/button';
 import { useTodoStore } from '@/lib/store';
-import { isPast, isToday, addDays, isFuture } from 'date-fns';
+import { isPast, isToday, addDays, isFuture, format } from 'date-fns';
 import { AddTaskDialog } from '@/components/tasks/add-task-dialog';
 import { Plus } from 'lucide-react';
 
@@ -29,9 +29,17 @@ export function TaskList({ tasks }: TaskListProps) {
       return false;
     }
     
-    // Search filter
-    if (filterBy.search && !task.title.toLowerCase().includes(filterBy.search.toLowerCase())) {
-      return false;
+    // Search filter - handle both regular search and date search
+    if (filterBy.search) {
+      // Check for date filter format: due:YYYY-MM-DD
+      if (filterBy.search.startsWith('due:')) {
+        const dateStr = filterBy.search.replace('due:', '');
+        return task.dueDate === dateStr;
+      }
+      // Regular search in title
+      if (!task.title.toLowerCase().includes(filterBy.search.toLowerCase())) {
+        return false;
+      }
     }
     
     return true;
