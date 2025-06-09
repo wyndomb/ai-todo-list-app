@@ -5,10 +5,12 @@ import { Header } from '@/components/layout/header';
 import { Footer } from '@/components/layout/footer';
 import { AIAssistantPanel } from '@/components/ai/ai-assistant-panel';
 import { Dashboard } from '@/components/dashboard/dashboard';
+import { CalendarView } from '@/components/dashboard/calendar-view';
 import { InsightsDashboard } from '@/components/dashboard/insights-dashboard';
 import { cn } from '@/lib/utils';
 import { 
   Sun, 
+  CalendarDays, 
   BarChart3,
   Sparkles
 } from 'lucide-react';
@@ -21,17 +23,20 @@ import {
 
 export function MainLayout() {
   const [aiPanelOpen, setAiPanelOpen] = useState(false);
-  const [activeView, setActiveView] = useState<'today' | 'insights'>('today');
+  const [activeView, setActiveView] = useState<'today' | 'calendar' | 'insights'>('today');
 
   const toggleAiPanel = () => setAiPanelOpen(!aiPanelOpen);
 
   const navigationItems = [
     { id: 'today', icon: Sun, label: 'Today', color: 'text-orange-500' },
+    { id: 'calendar', icon: CalendarDays, label: 'Calendar', color: 'text-green-500' },
     { id: 'insights', icon: BarChart3, label: 'Insights', color: 'text-purple-500' }
   ];
 
   const renderActiveView = () => {
     switch (activeView) {
+      case 'calendar':
+        return <CalendarView />;
       case 'insights':
         return <InsightsDashboard />;
       default:
