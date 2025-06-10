@@ -66,12 +66,16 @@ export function TaskList({ tasks }: TaskListProps) {
     if (tasks.length === 0) return null;
     
     return (
-      <div className="space-y-2">
-        <h3 className="flex items-center gap-2 text-sm font-medium text-muted-foreground pl-1">
-          <span>{emoji}</span>
-          <span>{title}</span>
-          <span className="text-xs font-normal">({tasks.length})</span>
-        </h3>
+      <div className="space-y-3">
+        <div className="flex items-center gap-2 px-1">
+          <span className="text-lg">{emoji}</span>
+          <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">
+            {title}
+          </h3>
+          <span className="text-xs font-normal text-gray-500 dark:text-gray-400">
+            ({tasks.length})
+          </span>
+        </div>
         <div className="space-y-2">
           {tasks.map(task => (
             <TaskItem key={task.id} task={task} />
@@ -82,23 +86,23 @@ export function TaskList({ tasks }: TaskListProps) {
   };
 
   return (
-    <div className="relative">
-      <div className="space-y-8">
+    <div className="w-full max-w-none">
+      <div className="space-y-6">
         {renderTaskGroup(focusTasks, "Focus for Today", "⚡️")}
         {renderTaskGroup(dueSoonTasks, "Due Soon", "⏳")}
         {renderTaskGroup(backlogTasks, "Backlog", "🧠")}
         {completedTasks.length > 0 && (
-          <div className="pt-4 border-t">
+          <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
             {renderTaskGroup(completedTasks, "Completed", "✅")}
           </div>
         )}
         
         {filteredTasks.length === 0 && (
-          <div className="text-center py-12 text-muted-foreground">
-            <p>No tasks found matching the current filters</p>
+          <div className="text-center py-12 text-gray-500 dark:text-gray-400">
+            <p className="mb-4">No tasks found matching the current filters</p>
             <Button 
               onClick={() => setShowAddTask(true)}
-              className="gap-2 mt-4"
+              className="gap-2"
               variant="outline"
             >
               <Plus className="h-4 w-4" />

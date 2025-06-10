@@ -85,11 +85,11 @@ export function TaskItem({ task }: TaskItemProps) {
   return (
     <div 
       className={cn(
-        "group relative flex items-center gap-4 p-4 rounded-2xl border transition-all duration-300",
+        "relative flex items-center gap-4 p-4 rounded-2xl border transition-all duration-200",
         task.completed 
           ? "bg-gray-50/50 dark:bg-gray-800/50 border-gray-200/50 dark:border-gray-700/50" 
-          : "bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700 hover:shadow-md hover:scale-[1.01]",
-        "animate-slide-fade"
+          : "bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700",
+        "w-full max-w-none"
       )}
     >
       {/* Emoji burst animation */}
@@ -103,29 +103,29 @@ export function TaskItem({ task }: TaskItemProps) {
         checked={task.completed}
         onCheckedChange={handleToggleCompletion}
         className={cn(
-          "transition-all duration-200 data-[state=checked]:animate-bounce-in",
+          "transition-all duration-200 flex-shrink-0",
           task.completed && "animate-task-complete"
         )}
       />
       
       <div className="flex-1 min-w-0 flex items-center gap-3">
-        <div className="flex-1">
+        <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
             <h3 
               className={cn(
-                "text-sm font-medium leading-none transition-all duration-200",
+                "text-sm font-medium leading-none transition-all duration-200 truncate",
                 task.completed && "line-through text-gray-500 dark:text-gray-400"
               )}
             >
               {task.title}
             </h3>
             {task.aiGenerated && (
-              <Sparkles className="h-3 w-3 text-purple-500" />
+              <Sparkles className="h-3 w-3 text-purple-500 flex-shrink-0" />
             )}
           </div>
           
           {task.description && (
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-1">
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 truncate">
               {task.description}
             </p>
           )}
@@ -167,7 +167,7 @@ export function TaskItem({ task }: TaskItemProps) {
           
           <div 
             className={cn(
-              "w-2 h-2 rounded-full",
+              "w-2 h-2 rounded-full flex-shrink-0",
               getPriorityColor(task.priority)
             )}
           />
@@ -179,7 +179,7 @@ export function TaskItem({ task }: TaskItemProps) {
           <Button 
             variant="ghost" 
             size="icon"
-            className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-all duration-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
+            className="h-8 w-8 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 flex-shrink-0"
           >
             <MoreHorizontal className="h-4 w-4" />
           </Button>
