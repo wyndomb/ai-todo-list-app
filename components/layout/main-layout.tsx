@@ -5,8 +5,8 @@ import { Header } from '@/components/layout/header';
 import { Footer } from '@/components/layout/footer';
 import { AIAssistantPanel } from '@/components/ai/ai-assistant-panel';
 import { Dashboard } from '@/components/dashboard/dashboard';
-import { InsightsDashboard } from '@/components/dashboard/insights-dashboard';
 import { CalendarView } from '@/components/dashboard/calendar-view';
+import { InsightsDashboard } from '@/components/dashboard/insights-dashboard';
 import { cn } from '@/lib/utils';
 import { 
   Sun, 
@@ -23,19 +23,20 @@ import {
 
 export function MainLayout() {
   const [aiPanelOpen, setAiPanelOpen] = useState(false);
-  const [showCalendarPanel, setShowCalendarPanel] = useState(false);
-  const [activeView, setActiveView] = useState<'today' | 'insights'>('today');
+  const [activeView, setActiveView] = useState<'today' | 'calendar' | 'insights'>('today');
 
   const toggleAiPanel = () => setAiPanelOpen(!aiPanelOpen);
 
   const navigationItems = [
-    { id: 'today', icon: Sun, label: 'Today', color: 'text-orange-500', onClick: () => setActiveView('today') },
-    { id: 'calendar', icon: CalendarDays, label: 'Calendar', color: 'text-green-500', onClick: () => setShowCalendarPanel(true) },
-    { id: 'insights', icon: BarChart3, label: 'Insights', color: 'text-purple-500', onClick: () => setActiveView('insights') }
+    { id: 'today', icon: Sun, label: 'Today', color: 'text-orange-500' },
+    { id: 'calendar', icon: CalendarDays, label: 'Calendar', color: 'text-green-500' },
+    { id: 'insights', icon: BarChart3, label: 'Insights', color: 'text-purple-500' }
   ];
 
   const renderActiveView = () => {
     switch (activeView) {
+      case 'calendar':
+        return <CalendarView />;
       case 'insights':
         return <InsightsDashboard />;
       default:
@@ -54,17 +55,17 @@ export function MainLayout() {
                 <Tooltip key={item.id} delayDuration={0}>
                   <TooltipTrigger asChild>
                     <button
-                      onClick={item.onClick}
+                      onClick={() => setActiveView(item.id as typeof activeView)}
                       className={cn(
                         "p-3 rounded-xl transition-all duration-200 hover:scale-105 group",
-                        (activeView === item.id || (item.id === 'calendar' && showCalendarPanel))
+                        activeView === item.id 
                           ? "bg-gradient-to-r from-blue-500/10 to-purple-500/10 text-blue-600 dark:text-blue-400 shadow-md" 
                           : "hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400"
                       )}
                     >
                       <item.icon className={cn(
                         "h-5 w-5 transition-colors duration-200",
-                        (activeView === item.id || (item.id === 'calendar' && showCalendarPanel)) ? item.color : ""
+                        activeView === item.id ? item.color : ""
                       )} />
                     </button>
                   </TooltipTrigger>
@@ -104,10 +105,6 @@ export function MainLayout() {
         </main>
         <Footer />
         <AIAssistantPanel open={aiPanelOpen} onClose={() => setAiPanelOpen(false)} />
-        <CalendarView 
-          open={showCalendarPanel} 
-          onClose={() => setShowCalendarPanel(false)} 
-        />
       </div>
     </div>
   );
