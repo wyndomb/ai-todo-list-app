@@ -3,7 +3,7 @@
 import { useTodoStore } from '@/lib/store';
 import { TaskList } from '@/components/tasks/task-list';
 import { Card, CardContent } from '@/components/ui/card';
-import { Target, CheckCircle2, Clock, AlertTriangle } from 'lucide-react';
+import { Target, CheckCircle2, Clock } from 'lucide-react';
 
 export function Dashboard() {
   const { tasks } = useTodoStore();
@@ -40,8 +40,8 @@ export function Dashboard() {
         </p>
       </div>
 
-      {/* Compact Progress Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mb-6 md:mb-8">
+      {/* Compact Progress Stats - Single Row */}
+      <div className="grid grid-cols-3 gap-3 md:gap-4 mb-6 md:mb-8">
         <Card className="card-modern">
           <CardContent className="p-3 md:p-4 text-center">
             <div className="flex items-center justify-center w-8 h-8 md:w-10 md:h-10 rounded-full bg-blue-100 dark:bg-blue-900/30 mx-auto mb-2">
@@ -80,20 +80,6 @@ export function Dashboard() {
             </div>
             <div className="text-xs text-gray-500 dark:text-gray-400">
               Remaining Today
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="card-modern">
-          <CardContent className="p-3 md:p-4 text-center">
-            <div className="flex items-center justify-center w-8 h-8 md:w-10 md:h-10 rounded-full bg-red-100 dark:bg-red-900/30 mx-auto mb-2">
-              <AlertTriangle className="h-4 w-4 md:h-5 md:w-5 text-red-600 dark:text-red-400" />
-            </div>
-            <div className="text-xl md:text-2xl font-bold text-gray-900 dark:text-gray-100">
-              {overdueTasks.length}
-            </div>
-            <div className="text-xs text-gray-500 dark:text-gray-400">
-              Overdue
             </div>
           </CardContent>
         </Card>
