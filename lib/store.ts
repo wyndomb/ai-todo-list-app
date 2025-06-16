@@ -107,6 +107,13 @@ export const useTodoStore = create<TodoState>()(
       
       clearTasks: () => set({
         tasks: [],
+        // Also clear all filters when clearing tasks
+        filterBy: {
+          category: null,
+          priority: null,
+          completed: null,
+          search: '',
+        },
       }),
       
       addCategory: (category) => set((state) => ({
