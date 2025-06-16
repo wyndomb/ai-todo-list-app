@@ -89,8 +89,8 @@ export function AddTaskDialog({ open, onOpenChange }: AddTaskDialogProps) {
       completed: false,
       dueDate: dueDate,
       priority: data.priority,
-      category: data.category || undefined,
-      parentId: data.parentId || undefined,
+      category: data.category === "none" ? undefined : data.category,
+      parentId: data.parentId === "none" ? undefined : data.parentId,
       isRecurringTemplate: data.isRecurringTemplate,
       recurrencePattern: data.isRecurringTemplate ? data.recurrencePattern : undefined,
       recurrenceEndDate: data.isRecurringTemplate && data.recurrenceEndDate 
@@ -439,7 +439,7 @@ export function AddTaskDialog({ open, onOpenChange }: AddTaskDialogProps) {
             )}
             
             {/* Category - Only show if not a subtask */}
-            {!form.watch('parentId') || form.watch('parentId') === "none" ? (
+            {(!form.watch('parentId') || form.watch('parentId') === "none") && (
               <FormField
                 control={form.control}
                 name="category"
@@ -474,7 +474,7 @@ export function AddTaskDialog({ open, onOpenChange }: AddTaskDialogProps) {
                   </FormItem>
                 )}
               />
-            ) : null}
+            )}
             
             <DialogFooter className="pt-4">
               <Button variant="outline" onClick={() => onOpenChange(false)}>
