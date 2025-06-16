@@ -85,7 +85,7 @@ export function TaskItem({ task }: TaskItemProps) {
   return (
     <div 
       className={cn(
-        "relative flex items-center gap-4 p-4 rounded-2xl border transition-all duration-200",
+        "relative flex items-start gap-3 md:gap-4 p-3 md:p-4 rounded-2xl border transition-all duration-200",
         task.completed 
           ? "bg-gray-50/50 dark:bg-gray-800/50 border-gray-200/50 dark:border-gray-700/50" 
           : "bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700",
@@ -103,102 +103,177 @@ export function TaskItem({ task }: TaskItemProps) {
         checked={task.completed}
         onCheckedChange={handleToggleCompletion}
         className={cn(
-          "transition-all duration-200 flex-shrink-0",
+          "transition-all duration-200 flex-shrink-0 mt-0.5",
           task.completed && "animate-task-complete"
         )}
       />
       
-      <div className="flex-1 min-w-0 flex items-center gap-3">
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1">
-            <h3 
-              className={cn(
-                "text-sm font-medium leading-none transition-all duration-200 truncate",
-                task.completed && "line-through text-gray-500 dark:text-gray-400"
+      <div className="flex-1 min-w-0">
+        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-start gap-2 mb-1">
+              <h3 
+                className={cn(
+                  "text-sm md:text-base font-medium leading-tight transition-all duration-200",
+                  task.completed && "line-through text-gray-500 dark:text-gray-400"
+                )}
+              >
+                {task.title}
+              </h3>
+              {task.aiGenerated && (
+                <Sparkles className="h-3 w-3 md:h-4 md:w-4 text-purple-500 flex-shrink-0 mt-0.5" />
               )}
-            >
-              {task.title}
-            </h3>
-            {task.aiGenerated && (
-              <Sparkles className="h-3 w-3 text-purple-500 flex-shrink-0" />
+            </div>
+            
+            {task.description && (
+              <p className="text-xs md:text-sm text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">
+                {task.description}
+              </p>
             )}
+
+            {/* Mobile: Show badges below description */}
+            <div className="flex flex-wrap items-center gap-2 mt-2 sm:hidden">
+              {task.category && (
+                <Badge 
+                  variant="secondary" 
+                  className={cn(
+                    "text-xs px-2 py-1 rounded-lg font-medium",
+                    getCategoryColor(task.category)
+                  )}
+                >
+                  {task.category}
+                </Badge>
+              )}
+              
+              {task.dueDate && (
+                <Badge 
+                  variant="outline"
+                  className={cn(
+                    "text-xs px-2 py-1 rounded-lg flex items-center gap-1 font-medium",
+                    isPastDue 
+                      ? "bg-red-50 text-red-600 border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800" 
+                      : isToday_ 
+                      ? "bg-blue-50 text-blue-600 border-blue-200 dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-800" 
+                      : "bg-gray-50 text-gray-600 border-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700"
+                  )}
+                >
+                  {isPastDue ? (
+                    <AlertTriangle className="h-3 w-3" />
+                  ) : (
+                    <CalendarDays className="h-3 w-3" />
+                  )}
+                  {format(new Date(task.dueDate), 'MMM d')}
+                </Badge>
+              )}
+              
+              <div 
+                className={cn(
+                  "w-2 h-2 rounded-full flex-shrink-0",
+                  getPriorityColor(task.priority)
+                )}
+              />
+            </div>
           </div>
           
-          {task.description && (
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 truncate">
-              {task.description}
-            </p>
-          )}
-        </div>
-        
-        <div className="flex items-center gap-2 flex-shrink-0">
-          {task.category && (
-            <Badge 
-              variant="secondary" 
-              className={cn(
-                "text-xs px-2 py-1 rounded-lg font-medium",
-                getCategoryColor(task.category)
-              )}
-            >
-              {task.category}
-            </Badge>
-          )}
-          
-          {task.dueDate && (
-            <Badge 
-              variant="outline"
-              className={cn(
-                "text-xs px-2 py-1 rounded-lg flex items-center gap-1 font-medium",
-                isPastDue 
-                  ? "bg-red-50 text-red-600 border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800" 
-                  : isToday_ 
-                  ? "bg-blue-50 text-blue-600 border-blue-200 dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-800" 
-                  : "bg-gray-50 text-gray-600 border-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700"
-              )}
-            >
-              {isPastDue ? (
-                <AlertTriangle className="h-3 w-3" />
-              ) : (
-                <CalendarDays className="h-3 w-3" />
-              )}
-              {format(new Date(task.dueDate), 'MMM d')}
-            </Badge>
-          )}
-          
-          <div 
-            className={cn(
-              "w-2 h-2 rounded-full flex-shrink-0",
-              getPriorityColor(task.priority)
+          {/* Desktop: Show badges and menu on the right */}
+          <div className="hidden sm:flex items-center gap-2 flex-shrink-0">
+            {task.category && (
+              <Badge 
+                variant="secondary" 
+                className={cn(
+                  "text-xs px-2 py-1 rounded-lg font-medium",
+                  getCategoryColor(task.category)
+                )}
+              >
+                {task.category}
+              </Badge>
             )}
-          />
+            
+            {task.dueDate && (
+              <Badge 
+                variant="outline"
+                className={cn(
+                  "text-xs px-2 py-1 rounded-lg flex items-center gap-1 font-medium",
+                  isPastDue 
+                    ? "bg-red-50 text-red-600 border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800" 
+                    : isToday_ 
+                    ? "bg-blue-50 text-blue-600 border-blue-200 dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-800" 
+                    : "bg-gray-50 text-gray-600 border-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700"
+                )}
+              >
+                {isPastDue ? (
+                  <AlertTriangle className="h-3 w-3" />
+                ) : (
+                  <CalendarDays className="h-3 w-3" />
+                )}
+                {format(new Date(task.dueDate), 'MMM d')}
+              </Badge>
+            )}
+            
+            <div 
+              className={cn(
+                "w-2 h-2 rounded-full flex-shrink-0",
+                getPriorityColor(task.priority)
+              )}
+            />
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button 
+                  variant="ghost" 
+                  size="icon"
+                  className="h-8 w-8 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 flex-shrink-0"
+                >
+                  <MoreHorizontal className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-40 rounded-xl border-gray-200/50 dark:border-gray-700/50 shadow-lg">
+                <DropdownMenuItem onClick={() => setShowEditDialog(true)} className="rounded-lg">
+                  <Edit className="mr-2 h-4 w-4" />
+                  Edit
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem 
+                  onClick={handleDelete}
+                  className="text-red-600 focus:text-red-600 dark:text-red-400 dark:focus:text-red-400 rounded-lg"
+                >
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Delete
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
       </div>
-      
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button 
-            variant="ghost" 
-            size="icon"
-            className="h-8 w-8 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 flex-shrink-0"
-          >
-            <MoreHorizontal className="h-4 w-4" />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-40 rounded-xl border-gray-200/50 dark:border-gray-700/50 shadow-lg">
-          <DropdownMenuItem onClick={() => setShowEditDialog(true)} className="rounded-lg">
-            <Edit className="mr-2 h-4 w-4" />
-            Edit
-          </DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem 
-            onClick={handleDelete}
-            className="text-red-600 focus:text-red-600 dark:text-red-400 dark:focus:text-red-400 rounded-lg"
-          >
-            <Trash2 className="mr-2 h-4 w-4" />
-            Delete
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+
+      {/* Mobile: Show menu button at bottom right */}
+      <div className="sm:hidden absolute top-3 right-3">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button 
+              variant="ghost" 
+              size="icon"
+              className="h-8 w-8 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 flex-shrink-0"
+            >
+              <MoreHorizontal className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-40 rounded-xl border-gray-200/50 dark:border-gray-700/50 shadow-lg">
+            <DropdownMenuItem onClick={() => setShowEditDialog(true)} className="rounded-lg">
+              <Edit className="mr-2 h-4 w-4" />
+              Edit
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem 
+              onClick={handleDelete}
+              className="text-red-600 focus:text-red-600 dark:text-red-400 dark:focus:text-red-400 rounded-lg"
+            >
+              <Trash2 className="mr-2 h-4 w-4" />
+              Delete
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
       
       {showEditDialog && (
         <EditTaskDialog 

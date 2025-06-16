@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -113,7 +114,7 @@ export function EditTaskDialog({ task, open, onOpenChange }: EditTaskDialogProps
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="sm:max-w-[500px]">
+        <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Edit Task</DialogTitle>
           </DialogHeader>
@@ -144,6 +145,7 @@ export function EditTaskDialog({ task, open, onOpenChange }: EditTaskDialogProps
                       <Textarea 
                         placeholder="Add details about this task (optional)"
                         className="resize-none"
+                        rows={3}
                         {...field}
                       />
                     </FormControl>
@@ -210,25 +212,25 @@ export function EditTaskDialog({ task, open, onOpenChange }: EditTaskDialogProps
                         <SelectContent>
                           <SelectItem value="low">
                             <div className="flex items-center gap-2">
-                              <div className="w-2 h-2 rounded-full bg-priority-low"></div>
+                              <div className="w-2 h-2 rounded-full bg-green-400"></div>
                               Low
                             </div>
                           </SelectItem>
                           <SelectItem value="medium">
                             <div className="flex items-center gap-2">
-                              <div className="w-2 h-2 rounded-full bg-priority-medium"></div>
+                              <div className="w-2 h-2 rounded-full bg-yellow-400"></div>
                               Medium
                             </div>
                           </SelectItem>
                           <SelectItem value="high">
                             <div className="flex items-center gap-2">
-                              <div className="w-2 h-2 rounded-full bg-priority-high"></div>
+                              <div className="w-2 h-2 rounded-full bg-orange-400"></div>
                               High
                             </div>
                           </SelectItem>
                           <SelectItem value="urgent">
                             <div className="flex items-center gap-2">
-                              <div className="w-2 h-2 rounded-full bg-priority-urgent"></div>
+                              <div className="w-2 h-2 rounded-full bg-red-400"></div>
                               Urgent
                             </div>
                           </SelectItem>
@@ -274,21 +276,22 @@ export function EditTaskDialog({ task, open, onOpenChange }: EditTaskDialogProps
                 )}
               />
               
-              <DialogFooter className="pt-4">
+              <DialogFooter className="pt-4 flex-col sm:flex-row gap-2">
                 <Button 
                   type="button" 
                   variant="outline" 
-                  className="text-destructive hover:text-destructive"
+                  className="text-destructive hover:text-destructive order-1 sm:order-none"
                   onClick={() => setShowDeleteDialog(true)}
                 >
                   <Trash2 className="h-4 w-4 mr-2" />
                   Delete
                 </Button>
-                <div className="flex-1"></div>
-                <Button variant="outline" onClick={() => onOpenChange(false)}>
-                  Cancel
-                </Button>
-                <Button type="submit">Save Changes</Button>
+                <div className="flex gap-2 order-2 sm:order-none">
+                  <Button variant="outline" onClick={() => onOpenChange(false)} className="flex-1 sm:flex-none">
+                    Cancel
+                  </Button>
+                  <Button type="submit" className="flex-1 sm:flex-none">Save Changes</Button>
+                </div>
               </DialogFooter>
             </form>
           </Form>

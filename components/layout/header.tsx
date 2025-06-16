@@ -53,13 +53,14 @@ export function Header() {
   };
 
   return (
-    <header className={`sticky top-0 z-40 w-full transition-all duration-300 ${
+    <header className={`sticky top-0 z-30 w-full transition-all duration-300 ${
       isScrolled 
         ? 'bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border-b border-gray-200/50 dark:border-gray-700/50 shadow-sm' 
         : 'bg-transparent'
     }`}>
-      <div className="container mx-auto flex h-16 items-center justify-between px-4">
-        <div className="flex-1 max-w-md">
+      <div className="container mx-auto flex h-16 items-center justify-between px-4 lg:px-6">
+        {/* Mobile: Skip search, show only essential items */}
+        <div className="hidden md:block flex-1 max-w-md">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
             <Input
@@ -71,23 +72,31 @@ export function Header() {
             />
           </div>
         </div>
+
+        {/* Mobile: Show app title */}
+        <div className="md:hidden flex-1">
+          <h1 className="text-lg font-semibold text-gray-900 dark:text-gray-100 ml-12">
+            AI Todo
+          </h1>
+        </div>
         
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 md:gap-3">
+          {/* Hide notification bell on mobile */}
           <Button 
             size="icon" 
             variant="ghost" 
-            className="relative rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200"
+            className="hidden md:flex relative rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200"
           >
             <Bell className="h-5 w-5" />
             <span className="absolute -top-1 -right-1 w-3 h-3 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full animate-pulse"></span>
           </Button>
           
           <Button 
-            className="gap-2 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white rounded-xl shadow-md hover:shadow-lg transition-all duration-200 hover:scale-105"
+            className="gap-2 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white rounded-xl shadow-md hover:shadow-lg transition-all duration-200 hover:scale-105 text-sm md:text-base px-3 md:px-4"
             onClick={() => setShowAddTask(true)}
           >
             <Plus className="h-4 w-4" />
-            New Task
+            <span className="hidden sm:inline">New Task</span>
           </Button>
           
           <DropdownMenu>

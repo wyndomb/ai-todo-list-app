@@ -62,25 +62,26 @@ export function UpcomingView() {
   };
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-4 md:space-y-6 animate-fade-in pb-20 lg:pb-0">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">
+          <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-gray-100">
             Upcoming
           </h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-1">
+          <p className="text-sm md:text-base text-gray-600 dark:text-gray-400 mt-1">
             Plan and manage your future tasks
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 md:gap-3 w-full sm:w-auto">
           {/* Month/Year Picker */}
           <Popover>
             <PopoverTrigger asChild>
-              <Button variant="outline" className="gap-2">
+              <Button variant="outline" className="gap-2 flex-1 sm:flex-none text-sm">
                 <CalendarIcon className="h-4 w-4" />
-                {format(selectedDate, 'MMMM yyyy')}
+                <span className="hidden sm:inline">{format(selectedDate, 'MMMM yyyy')}</span>
+                <span className="sm:hidden">{format(selectedDate, 'MMM yyyy')}</span>
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0" align="end">
@@ -101,7 +102,7 @@ export function UpcomingView() {
           <Button 
             variant="outline" 
             onClick={goToToday}
-            className="gap-2"
+            className="gap-2 text-sm"
           >
             Today
           </Button>
@@ -110,18 +111,18 @@ export function UpcomingView() {
 
       {/* Horizontal Date Navigation */}
       <Card className="card-modern">
-        <CardContent className="p-4">
+        <CardContent className="p-3 md:p-4">
           <div className="flex items-center justify-between mb-4">
             <Button
               variant="ghost"
               size="icon"
               onClick={() => navigateWeek('prev')}
-              className="rounded-full"
+              className="rounded-full h-8 w-8 md:h-10 md:w-10"
             >
               <ChevronLeft className="h-4 w-4" />
             </Button>
 
-            <div className="flex items-center gap-1 flex-1 justify-center">
+            <div className="flex items-center gap-1 flex-1 justify-center overflow-x-auto">
               {weekDays.map((day) => {
                 const dateStr = format(day, 'yyyy-MM-dd');
                 const taskCount = dayTaskCounts[dateStr];
@@ -133,7 +134,7 @@ export function UpcomingView() {
                     key={dateStr}
                     onClick={() => setSelectedDate(day)}
                     className={cn(
-                      "flex flex-col items-center p-3 rounded-xl transition-all duration-200 min-w-[80px]",
+                      "flex flex-col items-center p-2 md:p-3 rounded-xl transition-all duration-200 min-w-[60px] md:min-w-[80px]",
                       isSelected
                         ? "bg-primary text-primary-foreground shadow-md"
                         : isToday_
@@ -145,14 +146,14 @@ export function UpcomingView() {
                       {format(day, 'EEE')}
                     </span>
                     <span className={cn(
-                      "text-lg font-semibold",
+                      "text-base md:text-lg font-semibold",
                       isToday_ && !isSelected && "text-red-600 dark:text-red-400"
                     )}>
                       {format(day, 'd')}
                     </span>
                     {taskCount > 0 && (
                       <span className={cn(
-                        "text-xs px-2 py-0.5 rounded-full font-medium mt-1",
+                        "text-xs px-1.5 py-0.5 rounded-full font-medium mt-1",
                         isSelected
                           ? "bg-white/20 text-white"
                           : "bg-primary/10 text-primary"
@@ -169,7 +170,7 @@ export function UpcomingView() {
               variant="ghost"
               size="icon"
               onClick={() => navigateWeek('next')}
-              className="rounded-full"
+              className="rounded-full h-8 w-8 md:h-10 md:w-10"
             >
               <ChevronRight className="h-4 w-4" />
             </Button>
@@ -179,16 +180,17 @@ export function UpcomingView() {
 
       {/* Tasks for Selected Date */}
       <Card className="card-modern">
-        <CardContent className="p-6">
-          <div className="flex items-center gap-3 mb-6">
+        <CardContent className="p-4 md:p-6">
+          <div className="flex items-center gap-3 mb-4 md:mb-6">
             <div className="p-2 rounded-xl bg-gradient-to-r from-blue-500/10 to-purple-500/10">
-              <ListTodo className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+              <ListTodo className="h-5 w-5 md:h-6 md:w-6 text-blue-600 dark:text-blue-400" />
             </div>
             <div>
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
-                Tasks for {format(selectedDate, 'EEEE, MMMM d')}
+              <h2 className="text-lg md:text-xl font-semibold text-gray-900 dark:text-gray-100">
+                <span className="hidden sm:inline">Tasks for {format(selectedDate, 'EEEE, MMMM d')}</span>
+                <span className="sm:hidden">{format(selectedDate, 'MMM d, yyyy')}</span>
               </h2>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
+              <p className="text-xs md:text-sm text-gray-600 dark:text-gray-400">
                 {selectedDateTasks.length === 0 
                   ? "No tasks scheduled for this date" 
                   : `${selectedDateTasks.length} task${selectedDateTasks.length === 1 ? '' : 's'} scheduled`}
@@ -200,14 +202,14 @@ export function UpcomingView() {
             {selectedDateTasks.length > 0 ? (
               <TaskList tasks={selectedDateTasks} />
             ) : (
-              <div className="text-center py-12">
-                <div className="w-16 h-16 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center mx-auto mb-4">
-                  <ListTodo className="h-8 w-8 text-gray-400" />
+              <div className="text-center py-8 md:py-12">
+                <div className="w-12 h-12 md:w-16 md:h-16 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center mx-auto mb-4">
+                  <ListTodo className="h-6 w-6 md:h-8 md:w-8 text-gray-400" />
                 </div>
-                <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
+                <h3 className="text-base md:text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
                   No tasks scheduled
                 </h3>
-                <p className="text-gray-600 dark:text-gray-400 mb-4">
+                <p className="text-sm md:text-base text-gray-600 dark:text-gray-400 mb-4">
                   {isToday(selectedDate) 
                     ? "You're all caught up for today! Time to plan ahead or take a break."
                     : "No tasks are scheduled for this date. Select a different date or add new tasks."}
