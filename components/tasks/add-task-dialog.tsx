@@ -10,7 +10,8 @@ import { useToast } from '@/hooks/use-toast';
 import { CalendarIcon } from 'lucide-react';
 import { 
   Dialog, 
-  DialogContent, 
+  DialogContent,
+  DialogHeader,
   DialogTitle, 
   DialogFooter 
 } from '@/components/ui/dialog';
@@ -90,7 +91,9 @@ export function AddTaskDialog({ open, onOpenChange }: AddTaskDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
-        <DialogTitle>Add New Task</DialogTitle>
+        <DialogHeader>
+          <DialogTitle>Add New Task</DialogTitle>
+        </DialogHeader>
         
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">

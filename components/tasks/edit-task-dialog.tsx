@@ -115,7 +115,9 @@ export function EditTaskDialog({ task, open, onOpenChange }: EditTaskDialogProps
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
-          <DialogTitle>Edit Task</DialogTitle>
+          <DialogHeader>
+            <DialogTitle>Edit Task</DialogTitle>
+          </DialogHeader>
           
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
