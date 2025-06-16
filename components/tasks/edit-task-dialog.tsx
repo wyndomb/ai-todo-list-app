@@ -175,8 +175,8 @@ export function EditTaskDialog({ task, open, onOpenChange }: EditTaskDialogProps
                     <FormItem>
                       <FormLabel>Parent Task (Optional)</FormLabel>
                       <Select 
-                        onValueChange={field.onChange} 
-                        value={field.value}
+                        onValueChange={(value) => field.onChange(value === "none" ? undefined : value)} 
+                        value={field.value || "none"}
                       >
                         <FormControl>
                           <SelectTrigger>
@@ -184,7 +184,7 @@ export function EditTaskDialog({ task, open, onOpenChange }: EditTaskDialogProps
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="">No parent (standalone task)</SelectItem>
+                          <SelectItem value="none">No parent (standalone task)</SelectItem>
                           {potentialParentTasks.map((parentTask) => (
                             <SelectItem key={parentTask.id} value={parentTask.id}>
                               <div className="flex items-center gap-2">
@@ -299,8 +299,8 @@ export function EditTaskDialog({ task, open, onOpenChange }: EditTaskDialogProps
                   <FormItem>
                     <FormLabel>Category</FormLabel>
                     <Select 
-                      onValueChange={field.onChange} 
-                      value={field.value}
+                      onValueChange={(value) => field.onChange(value === "none" ? undefined : value)} 
+                      value={field.value || "none"}
                     >
                       <FormControl>
                         <SelectTrigger>
@@ -308,6 +308,7 @@ export function EditTaskDialog({ task, open, onOpenChange }: EditTaskDialogProps
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
+                        <SelectItem value="none">No category</SelectItem>
                         {categories.map((category) => (
                           <SelectItem key={category.id} value={category.name}>
                             <div className="flex items-center gap-2">

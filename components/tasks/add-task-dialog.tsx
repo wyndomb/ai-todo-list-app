@@ -159,8 +159,8 @@ export function AddTaskDialog({ open, onOpenChange }: AddTaskDialogProps) {
                 <FormItem>
                   <FormLabel>Parent Task (Optional)</FormLabel>
                   <Select 
-                    onValueChange={field.onChange} 
-                    value={field.value}
+                    onValueChange={(value) => field.onChange(value === "none" ? undefined : value)} 
+                    value={field.value || "none"}
                   >
                     <FormControl>
                       <SelectTrigger>
@@ -168,7 +168,7 @@ export function AddTaskDialog({ open, onOpenChange }: AddTaskDialogProps) {
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="">No parent (standalone task)</SelectItem>
+                      <SelectItem value="none">No parent (standalone task)</SelectItem>
                       {potentialParentTasks.map((task) => (
                         <SelectItem key={task.id} value={task.id}>
                           <div className="flex items-center gap-2">
@@ -223,7 +223,7 @@ export function AddTaskDialog({ open, onOpenChange }: AddTaskDialogProps) {
                     <FormLabel>Recurrence Pattern</FormLabel>
                     <Select 
                       onValueChange={field.onChange} 
-                      value={field.value}
+                      value={field.value || "daily"}
                     >
                       <FormControl>
                         <SelectTrigger>
@@ -447,8 +447,8 @@ export function AddTaskDialog({ open, onOpenChange }: AddTaskDialogProps) {
                   <FormItem>
                     <FormLabel>Category</FormLabel>
                     <Select 
-                      onValueChange={field.onChange} 
-                      value={field.value}
+                      onValueChange={(value) => field.onChange(value === "none" ? undefined : value)} 
+                      value={field.value || "none"}
                     >
                       <FormControl>
                         <SelectTrigger>
@@ -456,6 +456,7 @@ export function AddTaskDialog({ open, onOpenChange }: AddTaskDialogProps) {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
+                        <SelectItem value="none">No category</SelectItem>
                         {categories.map((category) => (
                           <SelectItem key={category.id} value={category.name}>
                             <div className="flex items-center gap-2">
