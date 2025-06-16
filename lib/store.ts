@@ -17,6 +17,10 @@ interface TodoState {
     search: string;
   };
   
+  // Hydration state
+  _hasHydrated: boolean;
+  setHasHydrated: (state: boolean) => void;
+  
   // Task actions
   addTask: (task: Omit<Task, 'id' | 'createdAt'>) => void;
   updateTask: (id: string, updates: Partial<Omit<Task, 'id'>>) => void;
@@ -63,6 +67,14 @@ export const useTodoStore = create<TodoState>()(
         priority: null,
         completed: null,
         search: '',
+      },
+      
+      // Hydration state
+      _hasHydrated: false,
+      setHasHydrated: (state) => {
+        set({
+          _hasHydrated: state
+        });
       },
       
       addTask: (task) => set((state) => ({
@@ -182,6 +194,9 @@ export const useTodoStore = create<TodoState>()(
     }),
     {
       name: 'ai-todo-storage',
+      onRehydrateStorage: () => (state) => {
+        state?.setHasHydrated(true);
+      },
     }
   )
 );

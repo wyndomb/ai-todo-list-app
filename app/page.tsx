@@ -1,17 +1,21 @@
 "use client";
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { MainLayout } from '@/components/layout/main-layout';
 import { useTodoStore } from '@/lib/store';
 import { Task } from '@/lib/types';
 import { format } from 'date-fns';
 
 export default function Home() {
-  const { tasks, addTask } = useTodoStore();
+  const { tasks, addTask, _hasHydrated } = useTodoStore();
+  const [isInitialized, setIsInitialized] = useState(false);
   
-  // Add sample tasks if none exist
+  // Wait for hydration and then initialize sample tasks if needed
   useEffect(() => {
-    if (tasks.length === 0) {
+    if (!_hasHydrated) return;
+    
+    // Only add sample tasks if the store is hydrated AND there are no existing tasks
+    if (tasks.length === 0 && !isInitialized) {
       const sampleTasks: Omit<Task, 'id' | 'createdAt'>[] = [
         {
           title: 'Create project plan',
@@ -60,8 +64,22 @@ export default function Home() {
       sampleTasks.forEach(task => {
         addTask(task);
       });
+      
+      setIsInitialized(true);
     }
-  }, [tasks, addTask]);
+  }, [_hasHydrated, tasks.length, addTask, isInitialized]);
+
+  // Show loading state until the store is hydrated
+  if (!_hasHydrated) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600 dark:text-gray-400">Loading your tasks...</p>
+        </div>
+      </div>
+    );
+  }
 
   return <MainLayout />;
 }
