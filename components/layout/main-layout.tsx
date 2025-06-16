@@ -6,6 +6,7 @@ import { Footer } from '@/components/layout/footer';
 import { AIAssistantPanel } from '@/components/ai/ai-assistant-panel';
 import { Dashboard } from '@/components/dashboard/dashboard';
 import { CalendarView } from '@/components/dashboard/calendar-view';
+import { UpcomingView } from '@/components/dashboard/upcoming-view';
 import { InsightsDashboard } from '@/components/dashboard/insights-dashboard';
 import { useTodoStore } from '@/lib/store';
 import { cn } from '@/lib/utils';
@@ -98,7 +99,7 @@ export function MainLayout() {
       case 'insights':
         return <InsightsDashboard />;
       case 'upcoming':
-        return <CalendarView />; // For now, use calendar view for upcoming
+        return <UpcomingView />;
       default:
         return <Dashboard />;
     }

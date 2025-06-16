@@ -11,20 +11,12 @@ import {
   SelectTrigger,
   SelectValue
 } from '@/components/ui/select';
-import { 
-  Popover,
-  PopoverContent,
-  PopoverTrigger
-} from '@/components/ui/popover';
-import { Button } from '@/components/ui/button';
-import { Calendar } from '@/components/ui/calendar';
-import { Target, TrendingUp, CheckCircle2, Clock, AlertTriangle, Filter, CalendarIcon, X } from 'lucide-react';
-import { isToday, isPast, format } from 'date-fns';
+import { Target, TrendingUp, CheckCircle2, Clock, AlertTriangle, Filter } from 'lucide-react';
+import { isToday, isPast } from 'date-fns';
 
 export function Dashboard() {
-  const { tasks, categories, setFilter, filterBy } = useTodoStore();
+  const { tasks, setFilter, filterBy } = useTodoStore();
   const [selectedPriority, setSelectedPriority] = useState<string>('all');
-  const [selectedQuickDate, setSelectedQuickDate] = useState<Date | undefined>(undefined);
   
   // Filter tasks for today and overdue
   const today = new Date().toISOString().split('T')[0];
@@ -47,21 +39,6 @@ export function Dashboard() {
   const handlePriorityChange = (value: string) => {
     setSelectedPriority(value);
     setFilter({ priority: value === 'all' ? null : value });
-  };
-
-  const handleDateSelect = (date: Date | undefined) => {
-    setSelectedQuickDate(date);
-    if (date) {
-      const dateStr = format(date, 'yyyy-MM-dd');
-      setFilter({ search: `due:${dateStr}` });
-    } else {
-      setFilter({ search: '' });
-    }
-  };
-
-  const clearDateFilter = () => {
-    setSelectedQuickDate(undefined);
-    setFilter({ search: '' });
   };
 
   return (
@@ -138,7 +115,7 @@ export function Dashboard() {
       </div>
 
       {/* Task Filters */}
-      <div className="flex items-center gap-4 mb-6 flex-wrap">
+      <div className="flex items-center gap-4 mb-6">
         <div className="flex items-center gap-2">
           <Filter className="h-4 w-4 text-gray-500" />
           <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Filters:</span>
@@ -176,62 +153,6 @@ export function Dashboard() {
             </SelectItem>
           </SelectContent>
         </Select>
-
-        {/* Quick Date Filter */}
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button 
-              variant="outline" 
-              className="w-[180px] justify-start text-left font-normal"
-            >
-              <CalendarIcon className="mr-2 h-4 w-4" />
-              {selectedQuickDate ? (
-                format(selectedQuickDate, 'MMM dd, yyyy')
-              ) : (
-                "Filter by Date"
-              )}
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-auto p-0" align="start">
-            <div className="p-3">
-              <div className="flex items-center justify-between mb-3">
-                <h4 className="text-sm font-medium">Select Date</h4>
-                {selectedQuickDate && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={clearDateFilter}
-                    className="h-6 w-6 p-0"
-                  >
-                    <X className="h-3 w-3" />
-                  </Button>
-                )}
-              </div>
-              <Calendar
-                mode="single"
-                selected={selectedQuickDate}
-                onSelect={handleDateSelect}
-                className="rounded-md border-0"
-                classNames={{
-                  day_today: "bg-primary text-primary-foreground font-bold",
-                  day_selected: "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground",
-                }}
-              />
-              {selectedQuickDate && (
-                <div className="pt-3 border-t mt-3">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={clearDateFilter}
-                    className="w-full"
-                  >
-                    Clear Filter
-                  </Button>
-                </div>
-              )}
-            </div>
-          </PopoverContent>
-        </Popover>
       </div>
 
       {/* Main Task List */}
@@ -243,16 +164,12 @@ export function Dashboard() {
             </div>
             <div>
               <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
-                {selectedQuickDate ? `Tasks for ${format(selectedQuickDate, 'MMMM d, yyyy')}` : "Today's Tasks"}
+                Today's Tasks
               </h2>
               <p className="text-sm text-gray-600 dark:text-gray-400">
-                {selectedQuickDate ? (
-                  "Viewing tasks for selected date"
-                ) : overdueTasks.length > 0 ? (
-                  `Including ${overdueTasks.length} overdue task${overdueTasks.length > 1 ? 's' : ''}`
-                ) : (
-                  "Focus on what matters today"
-                )}
+                {overdueTasks.length > 0 
+                  ? `Including ${overdueTasks.length} overdue task${overdueTasks.length > 1 ? 's' : ''}`
+                  : "Focus on what matters today"}
               </p>
             </div>
           </div>
@@ -266,13 +183,10 @@ export function Dashboard() {
                   <CheckCircle2 className="h-8 w-8 text-gray-400" />
                 </div>
                 <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
-                  {selectedQuickDate ? "No tasks for selected date" : "No tasks for today"}
+                  No tasks for today
                 </h3>
                 <p className="text-gray-600 dark:text-gray-400 mb-4">
-                  {selectedQuickDate ? 
-                    "Try selecting a different date or add new tasks." :
-                    "You're all caught up! Time to plan for tomorrow or take a well-deserved break."
-                  }
+                  You're all caught up! Time to plan for tomorrow or take a well-deserved break.
                 </p>
               </div>
             )}
