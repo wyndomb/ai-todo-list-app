@@ -1,13 +1,14 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Task } from '@/lib/types';
 import { TaskItem } from '@/components/tasks/task-item';
 import { Button } from '@/components/ui/button';
 import { useTodoStore } from '@/lib/store';
 import { isPast, isToday, addDays, isFuture, format } from 'date-fns';
 import { AddTaskDialog } from '@/components/tasks/add-task-dialog';
-import { Plus } from 'lucide-react';
+import { Plus, ChevronRight, ChevronDown } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface TaskListProps {
   tasks: Task[];
@@ -15,6 +16,7 @@ interface TaskListProps {
 
 export function TaskList({ tasks }: TaskListProps) {
   const [showAddTask, setShowAddTask] = useState(false);
+  const [expandedParents, setExpandedParents] = useState<Set<string>>(new Set());
   const { filterBy } = useTodoStore();
 
   // Apply filters from the store
@@ -45,16 +47,30 @@ export function TaskList({ tasks }: TaskListProps) {
     return true;
   });
 
-  // Group tasks by status
+  // Organize tasks into hierarchy (parent tasks with their subtasks)
+  const organizedTasks = useMemo(() => {
+    const parentTasks = filteredTasks.filter(task => !task.parentId);
+    const subtasksByParent = filteredTasks
+      .filter(task => task.parentId)
+      .reduce((acc, task) => {
+        if (!acc[task.parentId!]) acc[task.parentId!] = [];
+        acc[task.parentId!].push(task);
+        return acc;
+      }, {} as Record<string, Task[]>);
+
+    return { parentTasks, subtasksByParent };
+  }, [filteredTasks]);
+
+  // Group parent tasks by status
   const today = new Date().toISOString().split('T')[0];
   
-  const focusTasks = filteredTasks.filter(task => 
+  const focusTasks = organizedTasks.parentTasks.filter(task => 
     !task.completed && 
     ((task.dueDate && isToday(new Date(task.dueDate))) || 
      task.priority === 'urgent')
   );
 
-  const dueSoonTasks = filteredTasks.filter(task =>
+  const dueSoonTasks = organizedTasks.parentTasks.filter(task =>
     !task.completed &&
     task.dueDate &&
     isFuture(new Date(task.dueDate)) &&
@@ -62,12 +78,65 @@ export function TaskList({ tasks }: TaskListProps) {
     new Date(task.dueDate) <= addDays(new Date(), 7)
   );
 
-  const backlogTasks = filteredTasks.filter(task =>
+  const backlogTasks = organizedTasks.parentTasks.filter(task =>
     !task.completed &&
     (!task.dueDate || new Date(task.dueDate) > addDays(new Date(), 7))
   );
 
-  const completedTasks = filteredTasks.filter(task => task.completed);
+  const completedTasks = organizedTasks.parentTasks.filter(task => task.completed);
+
+  const toggleParentExpansion = (parentId: string) => {
+    const newExpanded = new Set(expandedParents);
+    if (newExpanded.has(parentId)) {
+      newExpanded.delete(parentId);
+    } else {
+      newExpanded.add(parentId);
+    }
+    setExpandedParents(newExpanded);
+  };
+
+  // Helper function to render a task with its subtasks
+  const renderTaskWithSubtasks = (task: Task) => {
+    const subtasks = organizedTasks.subtasksByParent[task.id] || [];
+    const hasSubtasks = subtasks.length > 0;
+    const isExpanded = expandedParents.has(task.id);
+
+    return (
+      <div key={task.id} className="space-y-2">
+        <div className="flex items-start gap-2">
+          {hasSubtasks && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 rounded-lg mt-1 flex-shrink-0"
+              onClick={() => toggleParentExpansion(task.id)}
+            >
+              {isExpanded ? (
+                <ChevronDown className="h-4 w-4" />
+              ) : (
+                <ChevronRight className="h-4 w-4" />
+              )}
+            </Button>
+          )}
+          <div className={cn("flex-1", !hasSubtasks && "ml-10")}>
+            <TaskItem task={task} />
+          </div>
+        </div>
+        
+        {/* Render subtasks if expanded */}
+        {hasSubtasks && isExpanded && (
+          <div className="ml-12 space-y-2 border-l-2 border-gray-200 dark:border-gray-700 pl-4">
+            {subtasks.map(subtask => (
+              <div key={subtask.id} className="relative">
+                <div className="absolute -left-4 top-4 w-2 h-0.5 bg-gray-200 dark:bg-gray-700"></div>
+                <TaskItem task={subtask} />
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  };
 
   // Helper function to render a task group
   const renderTaskGroup = (tasks: Task[], title: string, emoji: string) => {
@@ -85,9 +154,7 @@ export function TaskList({ tasks }: TaskListProps) {
           </span>
         </div>
         <div className="space-y-2">
-          {tasks.map(task => (
-            <TaskItem key={task.id} task={task} />
-          ))}
+          {tasks.map(task => renderTaskWithSubtasks(task))}
         </div>
       </div>
     );

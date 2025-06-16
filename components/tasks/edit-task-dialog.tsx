@@ -54,6 +54,7 @@ const formSchema = z.object({
   dueDate: z.date().optional(),
   priority: z.enum(['low', 'medium', 'high', 'urgent']),
   category: z.string().optional(),
+  parentId: z.string().optional(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -65,9 +66,18 @@ interface EditTaskDialogProps {
 }
 
 export function EditTaskDialog({ task, open, onOpenChange }: EditTaskDialogProps) {
-  const { updateTask, deleteTask, categories } = useTodoStore();
+  const { updateTask, deleteTask, categories, tasks } = useTodoStore();
   const { toast } = useToast();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  
+  // Get potential parent tasks (exclude the current task, its subtasks, completed tasks, and recurring templates)
+  const potentialParentTasks = tasks.filter(t => 
+    t.id !== task.id && 
+    t.parentId !== task.id && 
+    !t.completed && 
+    !t.parentId && 
+    !t.isRecurringTemplate
+  );
   
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -79,6 +89,7 @@ export function EditTaskDialog({ task, open, onOpenChange }: EditTaskDialogProps
         : undefined,
       priority: task.priority,
       category: task.category,
+      parentId: task.parentId || '',
     },
   });
   
@@ -89,6 +100,7 @@ export function EditTaskDialog({ task, open, onOpenChange }: EditTaskDialogProps
       dueDate: data.dueDate ? format(data.dueDate, 'yyyy-MM-dd') : undefined,
       priority: data.priority,
       category: data.category,
+      parentId: data.parentId || undefined,
     });
     
     toast({
@@ -153,6 +165,43 @@ export function EditTaskDialog({ task, open, onOpenChange }: EditTaskDialogProps
                   </FormItem>
                 )}
               />
+
+              {/* Parent Task Selection - Only show if not a recurring template */}
+              {!task.isRecurringTemplate && (
+                <FormField
+                  control={form.control}
+                  name="parentId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Parent Task (Optional)</FormLabel>
+                      <Select 
+                        onValueChange={field.onChange} 
+                        value={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select a parent task to make this a subtask" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="">No parent (standalone task)</SelectItem>
+                          {potentialParentTasks.map((parentTask) => (
+                            <SelectItem key={parentTask.id} value={parentTask.id}>
+                              <div className="flex items-center gap-2">
+                                <span className="truncate max-w-[200px]">{parentTask.title}</span>
+                                {parentTask.category && (
+                                  <span className="text-xs text-gray-500">({parentTask.category})</span>
+                                )}
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField
@@ -242,6 +291,7 @@ export function EditTaskDialog({ task, open, onOpenChange }: EditTaskDialogProps
                 />
               </div>
               
+              {/* Category - Only show if not a subtask or if editing a subtask */}
               <FormField
                 control={form.control}
                 name="category"
@@ -303,7 +353,7 @@ export function EditTaskDialog({ task, open, onOpenChange }: EditTaskDialogProps
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently delete the task "{task.title}". This action cannot be undone.
+              This will permanently delete the task "{task.title}"{task.parentId ? '' : ' and all its subtasks'}. This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

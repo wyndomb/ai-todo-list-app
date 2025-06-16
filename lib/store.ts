@@ -4,6 +4,7 @@ import { create } from 'zustand';
 import { v4 as uuidv4 } from 'uuid';
 import { Task, Category, Tag, AIInsight } from '@/lib/types';
 import { supabase } from '@/lib/supabase';
+import { addDays, addWeeks, addMonths, format, parseISO } from 'date-fns';
 
 interface TodoState {
   tasks: Task[];
@@ -57,6 +58,11 @@ const supabaseRowToTask = (row: any): Task => ({
   tags: row.tags || undefined,
   aiGenerated: row.ai_generated || undefined,
   aiSuggestions: row.ai_suggestions || undefined,
+  parentId: row.parent_id || undefined,
+  isRecurringTemplate: row.is_recurring_template || undefined,
+  recurrencePattern: row.recurrence_pattern || undefined,
+  recurrenceEndDate: row.recurrence_end_date || undefined,
+  originalTaskId: row.original_task_id || undefined,
 });
 
 // Helper function to convert Task to Supabase insert/update format
@@ -72,7 +78,41 @@ const taskToSupabaseFormat = (task: Partial<Task>) => ({
   tags: task.tags || null,
   ai_generated: task.aiGenerated || null,
   ai_suggestions: task.aiSuggestions || null,
+  parent_id: task.parentId || null,
+  is_recurring_template: task.isRecurringTemplate || null,
+  recurrence_pattern: task.recurrencePattern || null,
+  recurrence_end_date: task.recurrenceEndDate || null,
+  original_task_id: task.originalTaskId || null,
 });
+
+// Helper function to generate future dates based on recurrence pattern
+const generateRecurringDates = (
+  startDate: string, 
+  pattern: 'daily' | 'weekly' | 'monthly', 
+  endDate?: string
+): string[] => {
+  const dates: string[] = [];
+  let currentDate = parseISO(startDate);
+  const end = endDate ? parseISO(endDate) : addMonths(currentDate, 12); // Default to 12 months
+  
+  while (currentDate <= end) {
+    dates.push(format(currentDate, 'yyyy-MM-dd'));
+    
+    switch (pattern) {
+      case 'daily':
+        currentDate = addDays(currentDate, 1);
+        break;
+      case 'weekly':
+        currentDate = addWeeks(currentDate, 1);
+        break;
+      case 'monthly':
+        currentDate = addMonths(currentDate, 1);
+        break;
+    }
+  }
+  
+  return dates;
+};
 
 export const useTodoStore = create<TodoState>()((set, get) => ({
   tasks: [],
@@ -124,20 +164,71 @@ export const useTodoStore = create<TodoState>()((set, get) => ({
       id: uuidv4(),
       createdAt: new Date().toISOString(),
     };
+
+    // If it's a subtask, inherit category from parent
+    if (task.parentId) {
+      const parentTask = get().tasks.find(t => t.id === task.parentId);
+      if (parentTask && parentTask.category) {
+        newTask.category = parentTask.category;
+      }
+    }
     
     try {
-      const { error } = await supabase
-        .from('tasks')
-        .insert([taskToSupabaseFormat(newTask)]);
-      
-      if (error) {
-        console.error('Error adding task:', error);
-        return;
+      // If it's a recurring template, generate instances
+      if (task.isRecurringTemplate && task.recurrencePattern && task.dueDate) {
+        const recurringDates = generateRecurringDates(
+          task.dueDate, 
+          task.recurrencePattern, 
+          task.recurrenceEndDate
+        );
+        
+        // Insert the template task
+        const { error: templateError } = await supabase
+          .from('tasks')
+          .insert([taskToSupabaseFormat(newTask)]);
+        
+        if (templateError) {
+          console.error('Error adding template task:', templateError);
+          return;
+        }
+        
+        // Generate and insert recurring instances
+        const recurringInstances = recurringDates.map(date => ({
+          ...newTask,
+          id: uuidv4(),
+          dueDate: date,
+          isRecurringTemplate: false,
+          originalTaskId: newTask.id,
+          title: `${newTask.title} (${format(parseISO(date), 'MMM d')})`,
+        }));
+        
+        const { error: instancesError } = await supabase
+          .from('tasks')
+          .insert(recurringInstances.map(taskToSupabaseFormat));
+        
+        if (instancesError) {
+          console.error('Error adding recurring instances:', instancesError);
+          return;
+        }
+        
+        set((state) => ({
+          tasks: [newTask, ...recurringInstances, ...state.tasks],
+        }));
+      } else {
+        // Regular task
+        const { error } = await supabase
+          .from('tasks')
+          .insert([taskToSupabaseFormat(newTask)]);
+        
+        if (error) {
+          console.error('Error adding task:', error);
+          return;
+        }
+        
+        set((state) => ({
+          tasks: [newTask, ...state.tasks],
+        }));
       }
-      
-      set((state) => ({
-        tasks: [newTask, ...state.tasks],
-      }));
     } catch (error) {
       console.error('Error adding task:', error);
     }
@@ -167,6 +258,21 @@ export const useTodoStore = create<TodoState>()((set, get) => ({
   
   deleteTask: async (id) => {
     try {
+      // First, delete all subtasks
+      const subtasks = get().tasks.filter(task => task.parentId === id);
+      if (subtasks.length > 0) {
+        const { error: subtaskError } = await supabase
+          .from('tasks')
+          .delete()
+          .in('id', subtasks.map(t => t.id));
+        
+        if (subtaskError) {
+          console.error('Error deleting subtasks:', subtaskError);
+          return;
+        }
+      }
+      
+      // Then delete the main task
       const { error } = await supabase
         .from('tasks')
         .delete()
@@ -178,7 +284,7 @@ export const useTodoStore = create<TodoState>()((set, get) => ({
       }
       
       set((state) => ({
-        tasks: state.tasks.filter((task) => task.id !== id),
+        tasks: state.tasks.filter((task) => task.id !== id && task.parentId !== id),
       }));
     } catch (error) {
       console.error('Error deleting task:', error);
@@ -192,6 +298,7 @@ export const useTodoStore = create<TodoState>()((set, get) => ({
     const updates = { completed: !task.completed };
     
     try {
+      // Update the main task
       const { error } = await supabase
         .from('tasks')
         .update(taskToSupabaseFormat(updates))
@@ -202,11 +309,43 @@ export const useTodoStore = create<TodoState>()((set, get) => ({
         return;
       }
       
-      set((state) => ({
-        tasks: state.tasks.map((task) =>
-          task.id === id ? { ...task, ...updates } : task
-        ),
-      }));
+      // If completing a parent task, complete all subtasks
+      if (!task.completed) {
+        const subtasks = get().tasks.filter(t => t.parentId === id);
+        if (subtasks.length > 0) {
+          const { error: subtaskError } = await supabase
+            .from('tasks')
+            .update({ completed: true })
+            .in('id', subtasks.map(t => t.id));
+          
+          if (subtaskError) {
+            console.error('Error completing subtasks:', subtaskError);
+            return;
+          }
+          
+          // Update subtasks in state
+          set((state) => ({
+            tasks: state.tasks.map((t) =>
+              t.parentId === id ? { ...t, completed: true } : 
+              t.id === id ? { ...t, ...updates } : t
+            ),
+          }));
+        } else {
+          // No subtasks, just update the main task
+          set((state) => ({
+            tasks: state.tasks.map((t) =>
+              t.id === id ? { ...t, ...updates } : t
+            ),
+          }));
+        }
+      } else {
+        // Just update the main task
+        set((state) => ({
+          tasks: state.tasks.map((t) =>
+            t.id === id ? { ...t, ...updates } : t
+          ),
+        }));
+      }
     } catch (error) {
       console.error('Error toggling task completion:', error);
     }
