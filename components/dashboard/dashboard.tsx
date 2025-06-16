@@ -23,7 +23,6 @@ import { isToday, isPast, format } from 'date-fns';
 
 export function Dashboard() {
   const { tasks, categories, setFilter, filterBy } = useTodoStore();
-  const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedPriority, setSelectedPriority] = useState<string>('all');
   const [selectedQuickDate, setSelectedQuickDate] = useState<Date | undefined>(undefined);
   
@@ -44,11 +43,6 @@ export function Dashboard() {
   const todayCompletionRate = todayTasks.length > 0 
     ? Math.round((todayCompletedTasks / todayTasks.length) * 100) 
     : 0;
-
-  const handleCategoryChange = (value: string) => {
-    setSelectedCategory(value);
-    setFilter({ category: value === 'all' ? null : value });
-  };
 
   const handlePriorityChange = (value: string) => {
     setSelectedPriority(value);
@@ -149,26 +143,6 @@ export function Dashboard() {
           <Filter className="h-4 w-4 text-gray-500" />
           <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Filters:</span>
         </div>
-        
-        <Select value={selectedCategory} onValueChange={handleCategoryChange}>
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="All Categories" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Categories</SelectItem>
-            {categories.map(category => (
-              <SelectItem key={category.id} value={category.name}>
-                <div className="flex items-center gap-2">
-                  <div 
-                    className="w-2 h-2 rounded-full"
-                    style={{ backgroundColor: category.color }}
-                  />
-                  {category.name}
-                </div>
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
 
         <Select value={selectedPriority} onValueChange={handlePriorityChange}>
           <SelectTrigger className="w-[150px]">
