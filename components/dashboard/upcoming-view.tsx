@@ -122,49 +122,51 @@ export function UpcomingView() {
               <ChevronLeft className="h-4 w-4" />
             </Button>
 
-            <div className="flex items-center gap-1 flex-1 justify-center overflow-x-auto">
-              {weekDays.map((day) => {
-                const dateStr = format(day, 'yyyy-MM-dd');
-                const taskCount = dayTaskCounts[dateStr];
-                const isSelected = isSameDay(day, selectedDate);
-                const isToday_ = isToday(day);
+            <div className="flex-1 overflow-x-auto">
+              <div className="flex items-center gap-1 w-max mx-auto">
+                {weekDays.map((day) => {
+                  const dateStr = format(day, 'yyyy-MM-dd');
+                  const taskCount = dayTaskCounts[dateStr];
+                  const isSelected = isSameDay(day, selectedDate);
+                  const isToday_ = isToday(day);
 
-                return (
-                  <button
-                    key={dateStr}
-                    onClick={() => setSelectedDate(day)}
-                    className={cn(
-                      "flex flex-col items-center p-2 md:p-3 rounded-xl transition-all duration-200 min-w-[60px] md:min-w-[80px]",
-                      isSelected
-                        ? "bg-primary text-primary-foreground shadow-md"
-                        : isToday_
-                        ? "bg-red-50 text-red-600 border border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800"
-                        : "hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300"
-                    )}
-                  >
-                    <span className="text-xs font-medium mb-1">
-                      {format(day, 'EEE')}
-                    </span>
-                    <span className={cn(
-                      "text-base md:text-lg font-semibold",
-                      isToday_ && !isSelected && "text-red-600 dark:text-red-400"
-                    )}>
-                      {format(day, 'd')}
-                    </span>
-                    {/* Always render the task count span, but make it invisible when count is 0 */}
-                    <span className={cn(
-                      "text-xs px-1.5 py-0.5 rounded-full font-medium mt-1 h-5", // Fixed height
-                      taskCount > 0 
-                        ? isSelected
-                          ? "bg-white/20 text-white"
-                          : "bg-primary/10 text-primary"
-                        : "invisible" // Invisible but still takes up space
-                    )}>
-                      {taskCount > 0 ? taskCount : "0"}
-                    </span>
-                  </button>
-                );
-              })}
+                  return (
+                    <button
+                      key={dateStr}
+                      onClick={() => setSelectedDate(day)}
+                      className={cn(
+                        "flex flex-col items-center p-2 md:p-3 rounded-xl transition-all duration-200 min-w-[60px] md:min-w-[80px]",
+                        isSelected
+                          ? "bg-primary text-primary-foreground shadow-md"
+                          : isToday_
+                          ? "bg-red-50 text-red-600 border border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800"
+                          : "hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300"
+                      )}
+                    >
+                      <span className="text-xs font-medium mb-1">
+                        {format(day, 'EEE')}
+                      </span>
+                      <span className={cn(
+                        "text-base md:text-lg font-semibold",
+                        isToday_ && !isSelected && "text-red-600 dark:text-red-400"
+                      )}>
+                        {format(day, 'd')}
+                      </span>
+                      {/* Always render the task count span, but make it invisible when count is 0 */}
+                      <span className={cn(
+                        "text-xs px-1.5 py-0.5 rounded-full font-medium mt-1 h-5", // Fixed height
+                        taskCount > 0 
+                          ? isSelected
+                            ? "bg-white/20 text-white"
+                            : "bg-primary/10 text-primary"
+                          : "invisible" // Invisible but still takes up space
+                      )}>
+                        {taskCount > 0 ? taskCount : "0"}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
 
             <Button
