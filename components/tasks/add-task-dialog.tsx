@@ -11,7 +11,6 @@ import { CalendarIcon } from 'lucide-react';
 import { 
   Dialog, 
   DialogContent, 
-  DialogHeader, 
   DialogTitle, 
   DialogFooter 
 } from '@/components/ui/dialog';
@@ -67,11 +66,14 @@ export function AddTaskDialog({ open, onOpenChange }: AddTaskDialogProps) {
   });
   
   const onSubmit = (data: FormValues) => {
+    // If no due date is selected, default to today
+    const dueDate = data.dueDate ? format(data.dueDate, 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd');
+    
     addTask({
       title: data.title,
       description: data.description || undefined,
       completed: false,
-      dueDate: data.dueDate ? format(data.dueDate, 'yyyy-MM-dd') : undefined,
+      dueDate: dueDate,
       priority: data.priority,
       category: data.category,
     });
@@ -144,7 +146,7 @@ export function AddTaskDialog({ open, onOpenChange }: AddTaskDialogProps) {
                             {field.value ? (
                               format(field.value, "PPP")
                             ) : (
-                              <span>Pick a date</span>
+                              <span>Today (default)</span>
                             )}
                             <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                           </Button>
@@ -162,6 +164,9 @@ export function AddTaskDialog({ open, onOpenChange }: AddTaskDialogProps) {
                         />
                       </PopoverContent>
                     </Popover>
+                    <FormDescription className="text-xs">
+                      Leave empty to set due date as today
+                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -185,25 +190,25 @@ export function AddTaskDialog({ open, onOpenChange }: AddTaskDialogProps) {
                       <SelectContent>
                         <SelectItem value="low">
                           <div className="flex items-center gap-2">
-                            <div className="w-2 h-2 rounded-full bg-priority-low"></div>
+                            <div className="w-2 h-2 rounded-full bg-green-400"></div>
                             Low
                           </div>
                         </SelectItem>
                         <SelectItem value="medium">
                           <div className="flex items-center gap-2">
-                            <div className="w-2 h-2 rounded-full bg-priority-medium"></div>
+                            <div className="w-2 h-2 rounded-full bg-yellow-400"></div>
                             Medium
                           </div>
                         </SelectItem>
                         <SelectItem value="high">
                           <div className="flex items-center gap-2">
-                            <div className="w-2 h-2 rounded-full bg-priority-high"></div>
+                            <div className="w-2 h-2 rounded-full bg-orange-400"></div>
                             High
                           </div>
                         </SelectItem>
                         <SelectItem value="urgent">
                           <div className="flex items-center gap-2">
-                            <div className="w-2 h-2 rounded-full bg-priority-urgent"></div>
+                            <div className="w-2 h-2 rounded-full bg-red-400"></div>
                             Urgent
                           </div>
                         </SelectItem>
