@@ -89,8 +89,8 @@ export function AddTaskDialog({ open, onOpenChange }: AddTaskDialogProps) {
       completed: false,
       dueDate: dueDate,
       priority: data.priority,
-      category: data.category === "none" ? undefined : data.category,
-      parentId: data.parentId === "none" ? undefined : data.parentId,
+      category: data.category,
+      parentId: data.parentId,
       isRecurringTemplate: data.isRecurringTemplate,
       recurrencePattern: data.isRecurringTemplate ? data.recurrencePattern : undefined,
       recurrenceEndDate: data.isRecurringTemplate && data.recurrenceEndDate 
@@ -159,8 +159,8 @@ export function AddTaskDialog({ open, onOpenChange }: AddTaskDialogProps) {
                 <FormItem>
                   <FormLabel>Parent Task (Optional)</FormLabel>
                   <Select 
-                    onValueChange={(value) => field.onChange(value === "none" ? undefined : value)} 
-                    value={field.value || "none"}
+                    onValueChange={field.onChange} 
+                    value={field.value}
                   >
                     <FormControl>
                       <SelectTrigger>
@@ -168,7 +168,7 @@ export function AddTaskDialog({ open, onOpenChange }: AddTaskDialogProps) {
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="none">No parent (standalone task)</SelectItem>
+                      <SelectItem value="">No parent (standalone task)</SelectItem>
                       {potentialParentTasks.map((task) => (
                         <SelectItem key={task.id} value={task.id}>
                           <div className="flex items-center gap-2">
@@ -223,7 +223,7 @@ export function AddTaskDialog({ open, onOpenChange }: AddTaskDialogProps) {
                     <FormLabel>Recurrence Pattern</FormLabel>
                     <Select 
                       onValueChange={field.onChange} 
-                      value={field.value || "daily"}
+                      value={field.value}
                     >
                       <FormControl>
                         <SelectTrigger>
@@ -310,7 +310,7 @@ export function AddTaskDialog({ open, onOpenChange }: AddTaskDialogProps) {
                                 !field.value && "text-muted-foreground"
                               )}
                             >
-                              {field.value && field.value instanceof Date ? (
+                              {field.value ? (
                                 format(field.value, "PPP")
                               ) : (
                                 <span>12 months (default)</span>
@@ -439,7 +439,7 @@ export function AddTaskDialog({ open, onOpenChange }: AddTaskDialogProps) {
             )}
             
             {/* Category - Only show if not a subtask */}
-            {(!form.watch('parentId') || form.watch('parentId') === "none") && (
+            {!form.watch('parentId') && (
               <FormField
                 control={form.control}
                 name="category"
@@ -447,8 +447,8 @@ export function AddTaskDialog({ open, onOpenChange }: AddTaskDialogProps) {
                   <FormItem>
                     <FormLabel>Category</FormLabel>
                     <Select 
-                      onValueChange={(value) => field.onChange(value === "none" ? undefined : value)} 
-                      value={field.value || "none"}
+                      onValueChange={field.onChange} 
+                      value={field.value}
                     >
                       <FormControl>
                         <SelectTrigger>
@@ -456,7 +456,6 @@ export function AddTaskDialog({ open, onOpenChange }: AddTaskDialogProps) {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="none">No category</SelectItem>
                         {categories.map((category) => (
                           <SelectItem key={category.id} value={category.name}>
                             <div className="flex items-center gap-2">
