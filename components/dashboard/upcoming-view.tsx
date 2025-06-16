@@ -151,16 +151,17 @@ export function UpcomingView() {
                     )}>
                       {format(day, 'd')}
                     </span>
-                    {taskCount > 0 && (
-                      <span className={cn(
-                        "text-xs px-1.5 py-0.5 rounded-full font-medium mt-1",
-                        isSelected
+                    {/* Always render the task count span, but make it invisible when count is 0 */}
+                    <span className={cn(
+                      "text-xs px-1.5 py-0.5 rounded-full font-medium mt-1 h-5", // Fixed height
+                      taskCount > 0 
+                        ? isSelected
                           ? "bg-white/20 text-white"
                           : "bg-primary/10 text-primary"
-                      )}>
-                        {taskCount}
-                      </span>
-                    )}
+                        : "invisible" // Invisible but still takes up space
+                    )}>
+                      {taskCount > 0 ? taskCount : "0"}
+                    </span>
                   </button>
                 );
               })}
