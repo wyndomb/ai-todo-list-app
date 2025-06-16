@@ -198,17 +198,15 @@ Just ask naturally - I'll understand! ✨`;
   return (
     <Sheet open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
       <SheetContent className="w-full sm:max-w-md flex flex-col h-full p-0 bg-white dark:bg-gray-900 border-l border-gray-200/50 dark:border-gray-700/50">
-        <SheetHeader className="px-6 py-4 border-b border-gray-200/50 dark:border-gray-700/50 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20">
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-2xl bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center shadow-md">
-              <Sparkles className="h-5 w-5 text-white" />
-            </div>
-            <div>
-              <SheetTitle className="text-lg font-semibold">AI Assistant</SheetTitle>
-              <SheetDescription className="text-xs text-gray-600 dark:text-gray-400">
-                Powered by advanced AI ✨
-              </SheetDescription>
-            </div>
+        <SheetHeader className="px-6 py-4 border-b border-gray-200/50 dark:border-gray-700/50 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 flex items-center gap-3">
+          <div className="h-10 w-10 rounded-2xl bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center shadow-md">
+            <Sparkles className="h-5 w-5 text-white" />
+          </div>
+          <div>
+            <SheetTitle className="text-lg font-semibold">AI Assistant</SheetTitle>
+            <SheetDescription className="text-xs text-gray-600 dark:text-gray-400">
+              Powered by advanced AI ✨
+            </SheetDescription>
           </div>
         </SheetHeader>
         
