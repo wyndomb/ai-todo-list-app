@@ -261,7 +261,7 @@ export function AddTaskDialog({ open, onOpenChange }: AddTaskDialogProps) {
                               !field.value && "text-muted-foreground"
                             )}
                           >
-                            {field.value ? (
+                            {field.value && field.value instanceof Date && !isNaN(field.value.getTime()) ? (
                               format(field.value, "PPP")
                             ) : (
                               <span>Today (default)</span>
@@ -310,7 +310,7 @@ export function AddTaskDialog({ open, onOpenChange }: AddTaskDialogProps) {
                                 !field.value && "text-muted-foreground"
                               )}
                             >
-                              {field.value ? (
+                              {field.value && field.value instanceof Date && !isNaN(field.value.getTime()) ? (
                                 format(field.value, "PPP")
                               ) : (
                                 <span>12 months (default)</span>
