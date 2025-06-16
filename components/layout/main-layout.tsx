@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Header } from '@/components/layout/header';
 import { Footer } from '@/components/layout/footer';
 import { AIAssistantPanel } from '@/components/ai/ai-assistant-panel';
@@ -20,7 +20,7 @@ import {
   Hash,
   ChevronDown,
   Menu,
-  X
+  Loader2
 } from 'lucide-react';
 import {
   Tooltip,
@@ -41,7 +41,7 @@ export function MainLayout() {
   const [activeView, setActiveView] = useState<'today' | 'upcoming' | 'calendar' | 'insights'>('today');
   const [isProjectsOpen, setIsProjectsOpen] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const { tasks, categories, filterBy, setFilter } = useTodoStore();
+  const { tasks, categories, filterBy, setFilter, isLoading } = useTodoStore();
 
   const toggleAiPanel = () => setAiPanelOpen(!aiPanelOpen);
 
@@ -118,6 +118,18 @@ export function MainLayout() {
     setActiveView(view);
     setMobileMenuOpen(false); // Close mobile menu after selection
   };
+
+  // Show loading state while fetching initial data
+  if (isLoading && tasks.length === 0) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-primary" />
+          <p className="text-gray-600 dark:text-gray-400">Loading your tasks...</p>
+        </div>
+      </div>
+    );
+  }
 
   // Sidebar content component for reuse
   const SidebarContent = ({ isMobile = false }: { isMobile?: boolean }) => (
