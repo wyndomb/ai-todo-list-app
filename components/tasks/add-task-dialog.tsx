@@ -310,7 +310,7 @@ export function AddTaskDialog({ open, onOpenChange }: AddTaskDialogProps) {
                                 !field.value && "text-muted-foreground"
                               )}
                             >
-                              {field.value ? (
+                              {field.value && field.value instanceof Date ? (
                                 format(field.value, "PPP")
                               ) : (
                                 <span>12 months (default)</span>
