@@ -1,22 +1,12 @@
 "use client";
 
-import { useState } from 'react';
 import { useTodoStore } from '@/lib/store';
 import { TaskList } from '@/components/tasks/task-list';
 import { Card, CardContent } from '@/components/ui/card';
-import { 
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from '@/components/ui/select';
-import { Target, TrendingUp, CheckCircle2, Clock, AlertTriangle, Filter } from 'lucide-react';
-import { isToday, isPast } from 'date-fns';
+import { Target, CheckCircle2, Clock, AlertTriangle } from 'lucide-react';
 
 export function Dashboard() {
-  const { tasks, setFilter, filterBy } = useTodoStore();
-  const [selectedPriority, setSelectedPriority] = useState<string>('all');
+  const { tasks } = useTodoStore();
   
   // Filter tasks for today and overdue
   const today = new Date().toISOString().split('T')[0];
@@ -35,11 +25,6 @@ export function Dashboard() {
   const todayCompletionRate = todayTasks.length > 0 
     ? Math.round((todayCompletedTasks / todayTasks.length) * 100) 
     : 0;
-
-  const handlePriorityChange = (value: string) => {
-    setSelectedPriority(value);
-    setFilter({ priority: value === 'all' ? null : value });
-  };
 
   return (
     <div className="space-y-4 md:space-y-6 animate-fade-in max-w-none pb-20 lg:pb-0">
@@ -112,47 +97,6 @@ export function Dashboard() {
             </div>
           </CardContent>
         </Card>
-      </div>
-
-      {/* Task Filters - Mobile Optimized */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 mb-4 md:mb-6">
-        <div className="flex items-center gap-2">
-          <Filter className="h-4 w-4 text-gray-500" />
-          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Filters:</span>
-        </div>
-
-        <Select value={selectedPriority} onValueChange={handlePriorityChange}>
-          <SelectTrigger className="w-full sm:w-[150px]">
-            <SelectValue placeholder="All Priorities" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Priorities</SelectItem>
-            <SelectItem value="low">
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-green-400"></div>
-                Low
-              </div>
-            </SelectItem>
-            <SelectItem value="medium">
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-yellow-400"></div>
-                Medium
-              </div>
-            </SelectItem>
-            <SelectItem value="high">
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-orange-400"></div>
-                High
-              </div>
-            </SelectItem>
-            <SelectItem value="urgent">
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-red-400"></div>
-                Urgent
-              </div>
-            </SelectItem>
-          </SelectContent>
-        </Select>
       </div>
 
       {/* Main Task List */}
