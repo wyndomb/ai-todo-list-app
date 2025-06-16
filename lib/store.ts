@@ -26,6 +26,7 @@ interface TodoState {
   updateTask: (id: string, updates: Partial<Omit<Task, 'id'>>) => void;
   deleteTask: (id: string) => void;
   toggleTaskCompletion: (id: string) => void;
+  clearTasks: () => void;
   
   // Category actions
   addCategory: (category: Omit<Category, 'id'>) => void;
@@ -103,6 +104,10 @@ export const useTodoStore = create<TodoState>()(
           task.id === id ? { ...task, completed: !task.completed } : task
         ),
       })),
+      
+      clearTasks: () => set({
+        tasks: [],
+      }),
       
       addCategory: (category) => set((state) => ({
         categories: [...state.categories, { ...category, id: uuidv4() }],
