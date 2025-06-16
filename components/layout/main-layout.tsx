@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Header } from '@/components/layout/header';
 import { Footer } from '@/components/layout/footer';
 import { AIAssistantPanel } from '@/components/ai/ai-assistant-panel';
@@ -10,10 +10,14 @@ import { InsightsDashboard } from '@/components/dashboard/insights-dashboard';
 import { useTodoStore } from '@/lib/store';
 import { cn } from '@/lib/utils';
 import { 
+  Search,
   Sun, 
   CalendarDays, 
+  Calendar,
   BarChart3,
-  Sparkles
+  Sparkles,
+  Hash,
+  ChevronDown
 } from 'lucide-react';
 import {
   Tooltip,
@@ -21,18 +25,70 @@ import {
   TooltipTrigger,
   TooltipProvider
 } from "@/components/ui/tooltip";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import { isToday } from 'date-fns';
 
 export function MainLayout() {
   const [aiPanelOpen, setAiPanelOpen] = useState(false);
-  const [activeView, setActiveView] = useState<'today' | 'calendar' | 'insights'>('today');
-  const { categories, filterBy, setFilter } = useTodoStore();
+  const [activeView, setActiveView] = useState<'today' | 'upcoming' | 'calendar' | 'insights'>('today');
+  const [isProjectsOpen, setIsProjectsOpen] = useState(true);
+  const { tasks, categories, filterBy, setFilter } = useTodoStore();
 
   const toggleAiPanel = () => setAiPanelOpen(!aiPanelOpen);
 
+  // Calculate dynamic counts
+  const todayTasksCount = useMemo(() => {
+    const today = new Date().toISOString().split('T')[0];
+    return tasks.filter(task => 
+      !task.completed && (
+        task.dueDate === today || 
+        (task.dueDate && task.dueDate < today)
+      )
+    ).length;
+  }, [tasks]);
+
+  const categoryTaskCounts = useMemo(() => {
+    return categories.reduce((acc, category) => {
+      acc[category.name] = tasks.filter(task => 
+        !task.completed && task.category === category.name
+      ).length;
+      return acc;
+    }, {} as Record<string, number>);
+  }, [tasks, categories]);
+
   const navigationItems = [
-    { id: 'today', icon: Sun, label: 'Today', color: 'text-orange-500' },
-    { id: 'calendar', icon: CalendarDays, label: 'Calendar', color: 'text-green-500' },
-    { id: 'insights', icon: BarChart3, label: 'Insights', color: 'text-purple-500' }
+    { 
+      id: 'today', 
+      icon: Sun, 
+      label: 'Today', 
+      count: todayTasksCount,
+      activeColor: 'bg-red-500/90 text-white hover:bg-red-600/90'
+    },
+    { 
+      id: 'upcoming', 
+      icon: Calendar, 
+      label: 'Upcoming', 
+      count: null,
+      activeColor: 'bg-blue-500/90 text-white hover:bg-blue-600/90'
+    },
+    { 
+      id: 'calendar', 
+      icon: CalendarDays, 
+      label: 'Calendar', 
+      count: null,
+      activeColor: 'bg-green-500/90 text-white hover:bg-green-600/90'
+    },
+    { 
+      id: 'insights', 
+      icon: BarChart3, 
+      label: 'Insights', 
+      count: null,
+      activeColor: 'bg-purple-500/90 text-white hover:bg-purple-600/90'
+    }
   ];
 
   const renderActiveView = () => {
@@ -41,6 +97,8 @@ export function MainLayout() {
         return <CalendarView />;
       case 'insights':
         return <InsightsDashboard />;
+      case 'upcoming':
+        return <CalendarView />; // For now, use calendar view for upcoming
       default:
         return <Dashboard />;
     }
@@ -53,108 +111,109 @@ export function MainLayout() {
   return (
     <div className="flex min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Fixed Sidebar */}
-      <div className="fixed left-0 top-0 bottom-0 z-40 w-16 bg-white dark:bg-gray-900 border-r border-gray-200/50 dark:border-gray-700/50 shadow-sm">
-        <div className="flex flex-col h-full py-4">
-          <TooltipProvider>
-            <div className="flex-1 flex flex-col items-center gap-3 pt-4">
+      <div className="fixed left-0 top-0 bottom-0 z-40 w-64 bg-gray-900 text-gray-100 shadow-xl">
+        <div className="flex flex-col h-full">
+          {/* Search */}
+          <div className="p-4 border-b border-gray-700/50">
+            <div className="flex items-center gap-3 text-gray-300">
+              <Search className="h-5 w-5" />
+              <span className="text-sm font-medium">Search</span>
+            </div>
+          </div>
+
+          {/* Main Navigation */}
+          <div className="flex-1 py-4">
+            <div className="space-y-1 px-2">
               {navigationItems.map((item) => (
-                <div key={item.id} className="flex flex-col items-center">
-                  <Tooltip delayDuration={0}>
-                    <TooltipTrigger asChild>
-                      <button
-                        onClick={() => setActiveView(item.id as typeof activeView)}
-                        className={cn(
-                          "p-3 rounded-xl transition-all duration-200 hover:scale-105 group",
-                          activeView === item.id 
-                            ? "bg-gradient-to-r from-blue-500/10 to-purple-500/10 text-blue-600 dark:text-blue-400 shadow-md" 
-                            : "hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400"
-                        )}
-                      >
-                        <item.icon className={cn(
-                          "h-5 w-5 transition-colors duration-200",
-                          activeView === item.id ? item.color : ""
-                        )} />
-                      </button>
-                    </TooltipTrigger>
-                    <TooltipContent side="right" className="rounded-xl">
-                      <p>{item.label}</p>
-                    </TooltipContent>
-                  </Tooltip>
-
-                  {/* Category filters for Today view */}
-                  {item.id === 'today' && activeView === 'today' && (
-                    <div className="flex flex-col items-center gap-1 mt-2 w-full px-1">
-                      {/* All Categories button */}
-                      <Tooltip delayDuration={0}>
-                        <TooltipTrigger asChild>
-                          <button
-                            onClick={() => handleCategoryFilter(null)}
-                            className={cn(
-                              "w-8 h-8 rounded-lg transition-all duration-200 hover:scale-105 flex items-center justify-center text-xs font-medium",
-                              !filterBy.category
-                                ? "bg-blue-500/20 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-700"
-                                : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700"
-                            )}
-                          >
-                            All
-                          </button>
-                        </TooltipTrigger>
-                        <TooltipContent side="right" className="rounded-xl">
-                          <p>All Categories</p>
-                        </TooltipContent>
-                      </Tooltip>
-
-                      {/* Individual category buttons */}
-                      {categories.map((category) => (
-                        <Tooltip key={category.id} delayDuration={0}>
-                          <TooltipTrigger asChild>
-                            <button
-                              onClick={() => handleCategoryFilter(category.name)}
-                              className={cn(
-                                "w-8 h-8 rounded-lg transition-all duration-200 hover:scale-105 flex items-center justify-center relative",
-                                filterBy.category === category.name
-                                  ? "bg-blue-500/20 border border-blue-200 dark:border-blue-700 shadow-sm"
-                                  : "bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700"
-                              )}
-                            >
-                              <div 
-                                className="w-3 h-3 rounded-full"
-                                style={{ backgroundColor: category.color }}
-                              />
-                            </button>
-                          </TooltipTrigger>
-                          <TooltipContent side="right" className="rounded-xl">
-                            <p>{category.name}</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      ))}
-                    </div>
+                <button
+                  key={item.id}
+                  onClick={() => setActiveView(item.id as typeof activeView)}
+                  className={cn(
+                    "w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200",
+                    activeView === item.id 
+                      ? item.activeColor
+                      : "text-gray-300 hover:bg-gray-800 hover:text-white"
                   )}
-                </div>
+                >
+                  <div className="flex items-center gap-3">
+                    <item.icon className="h-5 w-5" />
+                    <span>{item.label}</span>
+                  </div>
+                  {item.count !== null && item.count > 0 && (
+                    <span className={cn(
+                      "px-2 py-0.5 text-xs rounded-full font-medium",
+                      activeView === item.id 
+                        ? "bg-white/20 text-white" 
+                        : "bg-gray-700 text-gray-300"
+                    )}>
+                      {item.count}
+                    </span>
+                  )}
+                </button>
               ))}
             </div>
 
-            <div className="flex flex-col items-center gap-3 pt-4">
-              <Tooltip delayDuration={0}>
-                <TooltipTrigger asChild>
-                  <button
-                    onClick={toggleAiPanel}
-                    className="p-3 rounded-xl hover:bg-gradient-to-r hover:from-purple-500/10 hover:to-pink-500/10 text-purple-500 hover:text-purple-600 transition-all duration-200 hover:scale-105 group"
-                  >
-                    <Sparkles className="h-5 w-5 group-hover:animate-pulse" />
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent side="right" className="rounded-xl">
-                  <p>AI Assistant</p>
-                </TooltipContent>
-              </Tooltip>
+            {/* My Projects Section */}
+            <div className="mt-8 px-2">
+              <Collapsible open={isProjectsOpen} onOpenChange={setIsProjectsOpen}>
+                <CollapsibleTrigger className="w-full flex items-center justify-between px-3 py-2 text-sm font-medium text-gray-400 hover:text-gray-300 transition-colors">
+                  <span>My Projects</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs bg-gray-700 px-2 py-0.5 rounded-full">
+                      {categories.length}/5
+                    </span>
+                    <ChevronDown className={cn(
+                      "h-4 w-4 transition-transform duration-200",
+                      isProjectsOpen && "rotate-180"
+                    )} />
+                  </div>
+                </CollapsibleTrigger>
+                <CollapsibleContent className="space-y-1 mt-2">
+                  {categories.map((category) => (
+                    <button
+                      key={category.id}
+                      onClick={() => handleCategoryFilter(category.name)}
+                      className={cn(
+                        "w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-all duration-200",
+                        filterBy.category === category.name
+                          ? "bg-gray-700 text-white"
+                          : "text-gray-400 hover:bg-gray-800 hover:text-gray-300"
+                      )}
+                    >
+                      <div className="flex items-center gap-3">
+                        <Hash 
+                          className="h-4 w-4" 
+                          style={{ color: category.color }}
+                        />
+                        <span>{category.name}</span>
+                      </div>
+                      {categoryTaskCounts[category.name] > 0 && (
+                        <span className="px-2 py-0.5 text-xs rounded-full bg-gray-700 text-gray-300 font-medium">
+                          {categoryTaskCounts[category.name]}
+                        </span>
+                      )}
+                    </button>
+                  ))}
+                </CollapsibleContent>
+              </Collapsible>
             </div>
-          </TooltipProvider>
+          </div>
+
+          {/* AI Assistant Button */}
+          <div className="p-4 border-t border-gray-700/50">
+            <button
+              onClick={toggleAiPanel}
+              className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-purple-400 hover:bg-purple-500/10 hover:text-purple-300 transition-all duration-200"
+            >
+              <Sparkles className="h-5 w-5" />
+              <span>AI Assistant</span>
+            </button>
+          </div>
         </div>
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col ml-16">
+      <div className="flex-1 flex flex-col ml-64">
         <Header />
         <main className="flex-1 container mx-auto p-4 md:p-6">
           <div className="animate-fade-in">
