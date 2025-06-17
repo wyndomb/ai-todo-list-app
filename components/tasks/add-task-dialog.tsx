@@ -44,7 +44,6 @@ const formSchema = z.object({
   dueDate: z.date().optional(),
   priority: z.enum(['low', 'medium', 'high', 'urgent']),
   category: z.string().optional(),
-  parentId: z.string().optional(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -55,7 +54,7 @@ interface AddTaskDialogProps {
 }
 
 export function AddTaskDialog({ open, onOpenChange }: AddTaskDialogProps) {
-  const { addTask, categories, tasks } = useTodoStore();
+  const { addTask, categories } = useTodoStore();
   const { toast } = useToast();
   
   const form = useForm<FormValues>({
@@ -66,11 +65,6 @@ export function AddTaskDialog({ open, onOpenChange }: AddTaskDialogProps) {
       priority: 'medium',
     },
   });
-  
-  // Get potential parent tasks (exclude completed and subtasks)
-  const potentialParentTasks = tasks.filter(task => 
-    !task.completed && !task.parentId
-  );
   
   const onSubmit = (data: FormValues) => {
     // If no due date is selected, default to today
@@ -83,7 +77,6 @@ export function AddTaskDialog({ open, onOpenChange }: AddTaskDialogProps) {
       dueDate: dueDate,
       priority: data.priority,
       category: data.category,
-      parentId: data.parentId,
     });
     
     toast({
@@ -132,44 +125,6 @@ export function AddTaskDialog({ open, onOpenChange }: AddTaskDialogProps) {
                       {...field}
                     />
                   </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            {/* Parent Task Selection */}
-            <FormField
-              control={form.control}
-              name="parentId"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Parent Task (Optional)</FormLabel>
-                  <Select 
-                    onValueChange={(value) => field.onChange(value === "none" ? undefined : value)} 
-                    value={field.value || "none"}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a parent task to create a subtask" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="none">No parent (standalone task)</SelectItem>
-                      {potentialParentTasks.map((task) => (
-                        <SelectItem key={task.id} value={task.id}>
-                          <div className="flex items-center gap-2">
-                            <span className="truncate max-w-[200px]">{task.title}</span>
-                            {task.category && (
-                              <span className="text-xs text-gray-500">({task.category})</span>
-                            )}
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormDescription className="text-xs">
-                    Subtasks inherit the category from their parent task
-                  </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
@@ -269,43 +224,41 @@ export function AddTaskDialog({ open, onOpenChange }: AddTaskDialogProps) {
               />
             </div>
             
-            {/* Category - Only show if not a subtask */}
-            {!form.watch('parentId') && (
-              <FormField
-                control={form.control}
-                name="category"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Category</FormLabel>
-                    <Select 
-                      onValueChange={(value) => field.onChange(value === "none" ? undefined : value)} 
-                      value={field.value || "none"}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select a category" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="none">No category</SelectItem>
-                        {categories.map((category) => (
-                          <SelectItem key={category.id} value={category.name}>
-                            <div className="flex items-center gap-2">
-                              <div 
-                                className="w-2 h-2 rounded-full" 
-                                style={{ backgroundColor: category.color }}
-                              ></div>
-                              {category.name}
-                            </div>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            )}
+            {/* Category */}
+            <FormField
+              control={form.control}
+              name="category"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Category</FormLabel>
+                  <Select 
+                    onValueChange={(value) => field.onChange(value === "none" ? undefined : value)} 
+                    value={field.value || "none"}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a category" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="none">No category</SelectItem>
+                      {categories.map((category) => (
+                        <SelectItem key={category.id} value={category.name}>
+                          <div className="flex items-center gap-2">
+                            <div 
+                              className="w-2 h-2 rounded-full" 
+                              style={{ backgroundColor: category.color }}
+                            ></div>
+                            {category.name}
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
             
             <DialogFooter className="pt-4">
               <Button variant="outline" onClick={() => onOpenChange(false)}>
