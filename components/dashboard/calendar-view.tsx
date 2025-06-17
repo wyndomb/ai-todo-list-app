@@ -5,20 +5,14 @@ import { format } from 'date-fns';
 import { Calendar } from '@/components/ui/calendar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { useTodoStore } from '@/lib/store';
 import { TaskItem } from '@/components/tasks/task-item';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
-import { CalendarIcon, ListTodo, X } from 'lucide-react';
+import { CalendarIcon, ListTodo } from 'lucide-react';
 
-interface CalendarViewProps {
-  onClose: () => void;
-}
-
-export function CalendarView({ onClose }: CalendarViewProps) {
+export function CalendarView() {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
-  const { tasks, setFilter } = useTodoStore();
+  const { tasks } = useTodoStore();
 
   // Get tasks for the selected date
   const selectedDateTasks = tasks.filter(task => {
@@ -31,41 +25,22 @@ export function CalendarView({ onClose }: CalendarViewProps) {
     .filter(task => task.dueDate)
     .map(task => new Date(task.dueDate!));
 
-  const handleDateSelect = (date: Date | undefined) => {
-    setSelectedDate(date);
-    if (date) {
-      // Set filter to show tasks for the selected date
-      setFilter({ search: `due:${format(date, 'yyyy-MM-dd')}` });
-      // Close the sheet after date selection
-      onClose();
-    }
-  };
-
-  const handleClearDateFilter = () => {
-    setSelectedDate(undefined);
-    setFilter({ search: '' });
-    onClose();
-  };
-
   return (
-    <>
-      <SheetHeader className="px-6 py-4 border-b border-gray-200/50 dark:border-gray-700/50 bg-gradient-to-r from-green-50 to-blue-50 dark:from-green-900/20 dark:to-blue-900/20 flex items-center gap-3">
-        <div className="h-10 w-10 rounded-2xl bg-gradient-to-r from-green-500 to-blue-500 flex items-center justify-center shadow-md">
-          <CalendarIcon className="h-5 w-5 text-white" />
+    <div className="animate-fade-in space-y-6">
+      <div className="flex items-center gap-2">
+        <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+          <CalendarIcon className="h-4 w-4 text-primary" />
         </div>
         <div>
-          <SheetTitle className="text-lg font-semibold">Calendar</SheetTitle>
-          <SheetDescription className="text-xs text-gray-600 dark:text-gray-400">
-            Select a date to filter your tasks
-          </SheetDescription>
+          <h1 className="text-2xl font-bold">Calendar View</h1>
+          <p className="text-muted-foreground">Manage and view your tasks by date</p>
         </div>
-      </SheetHeader>
+      </div>
 
-      <div className="flex-1 flex flex-col p-4 space-y-4">
-        {/* Calendar */}
-        <Card className="flex-shrink-0">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <Card className="lg:col-span-4">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Select Date</CardTitle>
+            <CardTitle className="text-sm font-medium">Calendar</CardTitle>
             <Badge variant="outline">
               {selectedDateTasks.length} tasks
             </Badge>
@@ -74,7 +49,7 @@ export function CalendarView({ onClose }: CalendarViewProps) {
             <Calendar
               mode="single"
               selected={selectedDate}
-              onSelect={handleDateSelect}
+              onSelect={setSelectedDate}
               modifiers={{
                 hasTasks: datesWithTasks,
               }}
@@ -94,21 +69,8 @@ export function CalendarView({ onClose }: CalendarViewProps) {
           </CardContent>
         </Card>
 
-        {/* Clear Filter Button */}
-        <div className="flex justify-center">
-          <Button 
-            variant="outline" 
-            onClick={handleClearDateFilter}
-            className="gap-2"
-          >
-            <X className="h-4 w-4" />
-            Clear Date Filter
-          </Button>
-        </div>
-
-        {/* Tasks for Selected Date */}
-        <Card className="flex-1 flex flex-col min-h-0">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 flex-shrink-0">
+        <Card className="lg:col-span-8">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <div>
               <CardTitle className="text-sm font-medium">
                 Tasks for {selectedDate ? format(selectedDate, 'MMMM d, yyyy') : 'Selected Date'}
@@ -123,9 +85,9 @@ export function CalendarView({ onClose }: CalendarViewProps) {
               <ListTodo className="h-4 w-4 text-primary" />
             </div>
           </CardHeader>
-          <CardContent className="flex-1 min-h-0">
+          <CardContent>
             {selectedDateTasks.length > 0 ? (
-              <ScrollArea className="h-full pr-4">
+              <ScrollArea className="h-[600px] pr-4">
                 <div className="space-y-3">
                   {selectedDateTasks.map(task => (
                     <TaskItem key={task.id} task={task} />
@@ -133,7 +95,7 @@ export function CalendarView({ onClose }: CalendarViewProps) {
                 </div>
               </ScrollArea>
             ) : (
-              <div className="flex flex-col items-center justify-center py-12 text-center h-full">
+              <div className="flex flex-col items-center justify-center py-12 text-center">
                 <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center mb-4">
                   <ListTodo className="h-6 w-6 text-muted-foreground" />
                 </div>
@@ -146,6 +108,6 @@ export function CalendarView({ onClose }: CalendarViewProps) {
           </CardContent>
         </Card>
       </div>
-    </>
+    </div>
   );
 }
