@@ -4,7 +4,6 @@ import { create } from 'zustand';
 import { v4 as uuidv4 } from 'uuid';
 import { Task, Category, Tag, AIInsight } from '@/lib/types';
 import { supabase } from '@/lib/supabase';
-import { addDays, addWeeks, addMonths, format, parseISO } from 'date-fns';
 
 interface TodoState {
   tasks: Task[];
@@ -59,10 +58,6 @@ const supabaseRowToTask = (row: any): Task => ({
   aiGenerated: row.ai_generated || undefined,
   aiSuggestions: row.ai_suggestions || undefined,
   parentId: row.parent_id || undefined,
-  isRecurringTemplate: row.is_recurring_template || undefined,
-  recurrencePattern: row.recurrence_pattern || undefined,
-  recurrenceEndDate: row.recurrence_end_date || undefined,
-  originalTaskId: row.original_task_id || undefined,
 });
 
 // Helper function to convert Task to Supabase insert/update format
@@ -79,40 +74,7 @@ const taskToSupabaseFormat = (task: Partial<Task>) => ({
   ai_generated: task.aiGenerated || null,
   ai_suggestions: task.aiSuggestions || null,
   parent_id: task.parentId || null,
-  is_recurring_template: task.isRecurringTemplate || null,
-  recurrence_pattern: task.recurrencePattern || null,
-  recurrence_end_date: task.recurrenceEndDate || null,
-  original_task_id: task.originalTaskId || null,
 });
-
-// Helper function to generate future dates based on recurrence pattern
-const generateRecurringDates = (
-  startDate: string, 
-  pattern: 'daily' | 'weekly' | 'monthly', 
-  endDate?: string
-): string[] => {
-  const dates: string[] = [];
-  let currentDate = parseISO(startDate);
-  const end = endDate ? parseISO(endDate) : addMonths(currentDate, 12); // Default to 12 months
-  
-  while (currentDate <= end) {
-    dates.push(format(currentDate, 'yyyy-MM-dd'));
-    
-    switch (pattern) {
-      case 'daily':
-        currentDate = addDays(currentDate, 1);
-        break;
-      case 'weekly':
-        currentDate = addWeeks(currentDate, 1);
-        break;
-      case 'monthly':
-        currentDate = addMonths(currentDate, 1);
-        break;
-    }
-  }
-  
-  return dates;
-};
 
 export const useTodoStore = create<TodoState>()((set, get) => ({
   tasks: [],
@@ -174,61 +136,18 @@ export const useTodoStore = create<TodoState>()((set, get) => ({
     }
     
     try {
-      // If it's a recurring template, generate instances
-      if (task.isRecurringTemplate && task.recurrencePattern && task.dueDate) {
-        const recurringDates = generateRecurringDates(
-          task.dueDate, 
-          task.recurrencePattern, 
-          task.recurrenceEndDate
-        );
-        
-        // Insert the template task
-        const { error: templateError } = await supabase
-          .from('tasks')
-          .insert([taskToSupabaseFormat(newTask)]);
-        
-        if (templateError) {
-          console.error('Error adding template task:', templateError);
-          return;
-        }
-        
-        // Generate and insert recurring instances
-        const recurringInstances = recurringDates.map(date => ({
-          ...newTask,
-          id: uuidv4(),
-          dueDate: date,
-          isRecurringTemplate: false,
-          originalTaskId: newTask.id,
-          title: `${newTask.title} (${format(parseISO(date), 'MMM d')})`,
-        }));
-        
-        const { error: instancesError } = await supabase
-          .from('tasks')
-          .insert(recurringInstances.map(taskToSupabaseFormat));
-        
-        if (instancesError) {
-          console.error('Error adding recurring instances:', instancesError);
-          return;
-        }
-        
-        set((state) => ({
-          tasks: [newTask, ...recurringInstances, ...state.tasks],
-        }));
-      } else {
-        // Regular task
-        const { error } = await supabase
-          .from('tasks')
-          .insert([taskToSupabaseFormat(newTask)]);
-        
-        if (error) {
-          console.error('Error adding task:', error);
-          return;
-        }
-        
-        set((state) => ({
-          tasks: [newTask, ...state.tasks],
-        }));
+      const { error } = await supabase
+        .from('tasks')
+        .insert([taskToSupabaseFormat(newTask)]);
+      
+      if (error) {
+        console.error('Error adding task:', error);
+        return;
       }
+      
+      set((state) => ({
+        tasks: [newTask, ...state.tasks],
+      }));
     } catch (error) {
       console.error('Error adding task:', error);
     }

@@ -70,13 +70,12 @@ export function EditTaskDialog({ task, open, onOpenChange }: EditTaskDialogProps
   const { toast } = useToast();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   
-  // Get potential parent tasks (exclude the current task, its subtasks, completed tasks, and recurring templates)
+  // Get potential parent tasks (exclude the current task, its subtasks, completed tasks)
   const potentialParentTasks = tasks.filter(t => 
     t.id !== task.id && 
     t.parentId !== task.id && 
     !t.completed && 
-    !t.parentId && 
-    !t.isRecurringTemplate
+    !t.parentId
   );
   
   const form = useForm<FormValues>({
@@ -166,42 +165,40 @@ export function EditTaskDialog({ task, open, onOpenChange }: EditTaskDialogProps
                 )}
               />
 
-              {/* Parent Task Selection - Only show if not a recurring template */}
-              {!task.isRecurringTemplate && (
-                <FormField
-                  control={form.control}
-                  name="parentId"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Parent Task (Optional)</FormLabel>
-                      <Select 
-                        onValueChange={(value) => field.onChange(value === "none" ? undefined : value)} 
-                        value={field.value || "none"}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select a parent task to make this a subtask" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="none">No parent (standalone task)</SelectItem>
-                          {potentialParentTasks.map((parentTask) => (
-                            <SelectItem key={parentTask.id} value={parentTask.id}>
-                              <div className="flex items-center gap-2">
-                                <span className="truncate max-w-[200px]">{parentTask.title}</span>
-                                {parentTask.category && (
-                                  <span className="text-xs text-gray-500">({parentTask.category})</span>
-                                )}
-                              </div>
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              )}
+              {/* Parent Task Selection */}
+              <FormField
+                control={form.control}
+                name="parentId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Parent Task (Optional)</FormLabel>
+                    <Select 
+                      onValueChange={(value) => field.onChange(value === "none" ? undefined : value)} 
+                      value={field.value || "none"}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a parent task to make this a subtask" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="none">No parent (standalone task)</SelectItem>
+                        {potentialParentTasks.map((parentTask) => (
+                          <SelectItem key={parentTask.id} value={parentTask.id}>
+                            <div className="flex items-center gap-2">
+                              <span className="truncate max-w-[200px]">{parentTask.title}</span>
+                              {parentTask.category && (
+                                <span className="text-xs text-gray-500">({parentTask.category})</span>
+                              )}
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField
@@ -291,7 +288,7 @@ export function EditTaskDialog({ task, open, onOpenChange }: EditTaskDialogProps
                 />
               </div>
               
-              {/* Category - Only show if not a subtask or if editing a subtask */}
+              {/* Category */}
               <FormField
                 control={form.control}
                 name="category"

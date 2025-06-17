@@ -41,10 +41,6 @@ export interface Database {
           ai_generated: boolean | null;
           ai_suggestions: string[] | null;
           parent_id: string | null;
-          is_recurring_template: boolean | null;
-          recurrence_pattern: 'daily' | 'weekly' | 'monthly' | null;
-          recurrence_end_date: string | null;
-          original_task_id: string | null;
         };
         Insert: {
           id?: string;
@@ -59,10 +55,6 @@ export interface Database {
           ai_generated?: boolean | null;
           ai_suggestions?: string[] | null;
           parent_id?: string | null;
-          is_recurring_template?: boolean | null;
-          recurrence_pattern?: 'daily' | 'weekly' | 'monthly' | null;
-          recurrence_end_date?: string | null;
-          original_task_id?: string | null;
         };
         Update: {
           id?: string;
@@ -77,10 +69,6 @@ export interface Database {
           ai_generated?: boolean | null;
           ai_suggestions?: string[] | null;
           parent_id?: string | null;
-          is_recurring_template?: boolean | null;
-          recurrence_pattern?: 'daily' | 'weekly' | 'monthly' | null;
-          recurrence_end_date?: string | null;
-          original_task_id?: string | null;
         };
       };
     };

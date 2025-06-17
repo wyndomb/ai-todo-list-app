@@ -10,13 +10,8 @@ export interface Task {
   tags?: string[];
   aiGenerated?: boolean;
   aiSuggestions?: string[];
-  // New fields for subtasks
+  // Fields for subtasks
   parentId?: string;
-  // New fields for recurring tasks
-  isRecurringTemplate?: boolean;
-  recurrencePattern?: 'daily' | 'weekly' | 'monthly';
-  recurrenceEndDate?: string;
-  originalTaskId?: string; // Links generated instances back to template
 }
 
 export interface Category {
