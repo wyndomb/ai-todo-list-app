@@ -100,6 +100,24 @@ export const useTodoStore = create<TodoState>()((set, get) => ({
   },
   
   fetchTasks: async () => {
+    if (!supabase) {
+      console.warn('Supabase not configured, using local storage fallback');
+      // Try to load from localStorage as fallback
+      try {
+        const stored = localStorage.getItem('todo-tasks');
+        if (stored) {
+          const tasks = JSON.parse(stored);
+          set({ tasks, isLoading: false });
+        } else {
+          set({ isLoading: false });
+        }
+      } catch (error) {
+        console.error('Error loading from localStorage:', error);
+        set({ isLoading: false });
+      }
+      return;
+    }
+
     set({ isLoading: true });
     try {
       const { data, error } = await supabase
@@ -135,6 +153,19 @@ export const useTodoStore = create<TodoState>()((set, get) => ({
       }
     }
     
+    if (!supabase) {
+      // Fallback to localStorage
+      const currentTasks = get().tasks;
+      const updatedTasks = [newTask, ...currentTasks];
+      set({ tasks: updatedTasks });
+      try {
+        localStorage.setItem('todo-tasks', JSON.stringify(updatedTasks));
+      } catch (error) {
+        console.error('Error saving to localStorage:', error);
+      }
+      return;
+    }
+    
     try {
       const { error } = await supabase
         .from('tasks')
@@ -154,6 +185,21 @@ export const useTodoStore = create<TodoState>()((set, get) => ({
   },
   
   updateTask: async (id, updates) => {
+    if (!supabase) {
+      // Fallback to localStorage
+      const currentTasks = get().tasks;
+      const updatedTasks = currentTasks.map((task) => 
+        task.id === id ? { ...task, ...updates } : task
+      );
+      set({ tasks: updatedTasks });
+      try {
+        localStorage.setItem('todo-tasks', JSON.stringify(updatedTasks));
+      } catch (error) {
+        console.error('Error saving to localStorage:', error);
+      }
+      return;
+    }
+
     try {
       const { error } = await supabase
         .from('tasks')
@@ -176,6 +222,19 @@ export const useTodoStore = create<TodoState>()((set, get) => ({
   },
   
   deleteTask: async (id) => {
+    if (!supabase) {
+      // Fallback to localStorage
+      const currentTasks = get().tasks;
+      const updatedTasks = currentTasks.filter((task) => task.id !== id && task.parentId !== id);
+      set({ tasks: updatedTasks });
+      try {
+        localStorage.setItem('todo-tasks', JSON.stringify(updatedTasks));
+      } catch (error) {
+        console.error('Error saving to localStorage:', error);
+      }
+      return;
+    }
+
     try {
       // First, delete all subtasks
       const subtasks = get().tasks.filter(task => task.parentId === id);
@@ -215,6 +274,32 @@ export const useTodoStore = create<TodoState>()((set, get) => ({
     if (!task) return;
     
     const updates = { completed: !task.completed };
+    
+    if (!supabase) {
+      // Fallback to localStorage
+      const currentTasks = get().tasks;
+      let updatedTasks;
+      
+      if (!task.completed) {
+        const subtasks = currentTasks.filter(t => t.parentId === id);
+        updatedTasks = currentTasks.map((t) =>
+          t.parentId === id ? { ...t, completed: true } : 
+          t.id === id ? { ...t, ...updates } : t
+        );
+      } else {
+        updatedTasks = currentTasks.map((t) =>
+          t.id === id ? { ...t, ...updates } : t
+        );
+      }
+      
+      set({ tasks: updatedTasks });
+      try {
+        localStorage.setItem('todo-tasks', JSON.stringify(updatedTasks));
+      } catch (error) {
+        console.error('Error saving to localStorage:', error);
+      }
+      return;
+    }
     
     try {
       // Update the main task
@@ -271,6 +356,25 @@ export const useTodoStore = create<TodoState>()((set, get) => ({
   },
   
   clearTasks: async () => {
+    if (!supabase) {
+      // Fallback to localStorage
+      set({
+        tasks: [],
+        filterBy: {
+          category: null,
+          priority: null,
+          completed: null,
+          search: '',
+        },
+      });
+      try {
+        localStorage.removeItem('todo-tasks');
+      } catch (error) {
+        console.error('Error clearing localStorage:', error);
+      }
+      return;
+    }
+
     try {
       const { error } = await supabase
         .from('tasks')
