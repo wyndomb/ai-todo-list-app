@@ -319,8 +319,8 @@ export function EditTaskDialog({ task, open, onOpenChange }: EditTaskDialogProps
               Delete
             </AlertDialogAction>
           </AlertDialogFooter>
-        </AlertDialogFooter>
-      </Dialog>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }
