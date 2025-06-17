@@ -165,7 +165,7 @@ export function EditTaskDialog({ task, open, onOpenChange }: EditTaskDialogProps
                 )}
               />
 
-              {/* Parent Task Selection */}
+              {/* Parent Task Selection - Maintain current relationship */}
               <FormField
                 control={form.control}
                 name="parentId"
