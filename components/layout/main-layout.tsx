@@ -31,11 +31,13 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import { Sheet, SheetContent } from '@/components/ui/sheet';
 
 export function MainLayout() {
   const [aiPanelOpen, setAiPanelOpen] = useState(false);
-  const [activeView, setActiveView] = useState<'today' | 'upcoming' | 'calendar' | 'insights'>('today');
+  const [activeView, setActiveView] = useState<'today' | 'upcoming' | 'insights'>('today');
   const [isProjectsOpen, setIsProjectsOpen] = useState(true);
+  const [calendarSheetOpen, setCalendarSheetOpen] = useState(false);
   const { tasks, categories, filterBy, setFilter, isLoading } = useTodoStore();
 
   const toggleAiPanel = () => setAiPanelOpen(!aiPanelOpen);
@@ -66,35 +68,37 @@ export function MainLayout() {
       icon: Sun, 
       label: 'Today', 
       count: todayTasksCount,
-      activeColor: 'bg-red-500/90 text-white hover:bg-red-600/90'
+      activeColor: 'bg-red-500/90 text-white hover:bg-red-600/90',
+      onClick: () => setActiveView('today')
     },
     { 
       id: 'upcoming', 
       icon: Calendar, 
       label: 'Upcoming', 
       count: null,
-      activeColor: 'bg-blue-500/90 text-white hover:bg-blue-600/90'
+      activeColor: 'bg-blue-500/90 text-white hover:bg-blue-600/90',
+      onClick: () => setActiveView('upcoming')
     },
     { 
       id: 'calendar', 
       icon: CalendarDays, 
       label: 'Calendar', 
       count: null,
-      activeColor: 'bg-green-500/90 text-white hover:bg-green-600/90'
+      activeColor: 'bg-green-500/90 text-white hover:bg-green-600/90',
+      onClick: () => setCalendarSheetOpen(true)
     },
     { 
       id: 'insights', 
       icon: BarChart3, 
       label: 'Insights', 
       count: null,
-      activeColor: 'bg-purple-500/90 text-white hover:bg-purple-600/90'
+      activeColor: 'bg-purple-500/90 text-white hover:bg-purple-600/90',
+      onClick: () => setActiveView('insights')
     }
   ];
 
   const renderActiveView = () => {
     switch (activeView) {
-      case 'calendar':
-        return <CalendarView />;
       case 'insights':
         return <InsightsDashboard />;
       case 'upcoming':
@@ -141,10 +145,10 @@ export function MainLayout() {
           {navigationItems.map((item) => (
             <button
               key={item.id}
-              onClick={() => handleViewChange(item.id as typeof activeView)}
+              onClick={item.onClick}
               className={cn(
                 "w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200",
-                activeView === item.id 
+                (activeView === item.id && item.id !== 'calendar') 
                   ? item.activeColor
                   : "text-gray-300 hover:bg-gray-800 hover:text-white"
               )}
@@ -156,7 +160,7 @@ export function MainLayout() {
               {item.count !== null && item.count > 0 && (
                 <span className={cn(
                   "px-2 py-0.5 text-xs rounded-full font-medium",
-                  activeView === item.id 
+                  (activeView === item.id && item.id !== 'calendar') 
                     ? "bg-white/20 text-white" 
                     : "bg-gray-700 text-gray-300"
                 )}>
@@ -242,6 +246,14 @@ export function MainLayout() {
           </div>
         </main>
         <Footer />
+        
+        {/* Calendar Sheet */}
+        <Sheet open={calendarSheetOpen} onOpenChange={setCalendarSheetOpen}>
+          <SheetContent side="right" className="w-full sm:max-w-md flex flex-col h-full p-0 bg-white dark:bg-gray-900 border-l border-gray-200/50 dark:border-gray-700/50">
+            <CalendarView onClose={() => setCalendarSheetOpen(false)} />
+          </SheetContent>
+        </Sheet>
+        
         <AIAssistantPanel open={aiPanelOpen} onClose={() => setAiPanelOpen(false)} />
       </div>
 
@@ -251,10 +263,10 @@ export function MainLayout() {
           {navigationItems.map((item) => (
             <button
               key={item.id}
-              onClick={() => handleViewChange(item.id as typeof activeView)}
+              onClick={item.onClick}
               className={cn(
                 "flex flex-col items-center gap-1 px-3 py-2 rounded-lg transition-all duration-200 relative",
-                activeView === item.id 
+                (activeView === item.id && item.id !== 'calendar') 
                   ? "text-primary" 
                   : "text-gray-500 dark:text-gray-400"
               )}
