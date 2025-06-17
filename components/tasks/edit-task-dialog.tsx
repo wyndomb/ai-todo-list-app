@@ -54,7 +54,6 @@ const formSchema = z.object({
   dueDate: z.date().optional(),
   priority: z.enum(['low', 'medium', 'high', 'urgent']),
   category: z.string().optional(),
-  parentId: z.string().optional(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -66,17 +65,9 @@ interface EditTaskDialogProps {
 }
 
 export function EditTaskDialog({ task, open, onOpenChange }: EditTaskDialogProps) {
-  const { updateTask, deleteTask, categories, tasks } = useTodoStore();
+  const { updateTask, deleteTask, categories } = useTodoStore();
   const { toast } = useToast();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  
-  // Get potential parent tasks (exclude the current task, its subtasks, completed tasks)
-  const potentialParentTasks = tasks.filter(t => 
-    t.id !== task.id && 
-    t.parentId !== task.id && 
-    !t.completed && 
-    !t.parentId
-  );
   
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -88,7 +79,6 @@ export function EditTaskDialog({ task, open, onOpenChange }: EditTaskDialogProps
         : undefined,
       priority: task.priority,
       category: task.category,
-      parentId: task.parentId || '',
     },
   });
   
@@ -99,7 +89,8 @@ export function EditTaskDialog({ task, open, onOpenChange }: EditTaskDialogProps
       dueDate: data.dueDate ? format(data.dueDate, 'yyyy-MM-dd') : undefined,
       priority: data.priority,
       category: data.category,
-      parentId: data.parentId || undefined,
+      // Maintain existing parent relationship
+      parentId: task.parentId,
     });
     
     toast({
@@ -160,41 +151,6 @@ export function EditTaskDialog({ task, open, onOpenChange }: EditTaskDialogProps
                         {...field}
                       />
                     </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              {/* Parent Task Selection - Maintain current relationship */}
-              <FormField
-                control={form.control}
-                name="parentId"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Parent Task (Optional)</FormLabel>
-                    <Select 
-                      onValueChange={(value) => field.onChange(value === "none" ? undefined : value)} 
-                      value={field.value || "none"}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select a parent task to make this a subtask" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="none">No parent (standalone task)</SelectItem>
-                        {potentialParentTasks.map((parentTask) => (
-                          <SelectItem key={parentTask.id} value={parentTask.id}>
-                            <div className="flex items-center gap-2">
-                              <span className="truncate max-w-[200px]">{parentTask.title}</span>
-                              {parentTask.category && (
-                                <span className="text-xs text-gray-500">({parentTask.category})</span>
-                              )}
-                            </div>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -363,8 +319,8 @@ export function EditTaskDialog({ task, open, onOpenChange }: EditTaskDialogProps
               Delete
             </AlertDialogAction>
           </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+        </AlertDialogFooter>
+      </Dialog>
     </>
   );
 }
