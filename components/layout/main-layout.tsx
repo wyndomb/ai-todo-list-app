@@ -19,8 +19,6 @@ import {
   Sparkles,
   Hash,
   ChevronDown,
-  Menu,
-  Loader2
 } from 'lucide-react';
 import {
   Tooltip,
@@ -33,14 +31,11 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import { Button } from '@/components/ui/button';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 
 export function MainLayout() {
   const [aiPanelOpen, setAiPanelOpen] = useState(false);
   const [activeView, setActiveView] = useState<'today' | 'upcoming' | 'calendar' | 'insights'>('today');
   const [isProjectsOpen, setIsProjectsOpen] = useState(true);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { tasks, categories, filterBy, setFilter, isLoading } = useTodoStore();
 
   const toggleAiPanel = () => setAiPanelOpen(!aiPanelOpen);
@@ -111,12 +106,10 @@ export function MainLayout() {
 
   const handleCategoryFilter = (categoryName: string | null) => {
     setFilter({ category: categoryName });
-    setMobileMenuOpen(false); // Close mobile menu after selection
   };
 
   const handleViewChange = (view: typeof activeView) => {
     setActiveView(view);
-    setMobileMenuOpen(false); // Close mobile menu after selection
   };
 
   // Show loading state while fetching initial data
@@ -124,15 +117,15 @@ export function MainLayout() {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
-          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-primary" />
+          <div className="h-8 w-8 animate-spin mx-auto mb-4 border-4 border-primary border-t-transparent rounded-full"></div>
           <p className="text-gray-600 dark:text-gray-400">Loading your tasks...</p>
         </div>
       </div>
     );
   }
 
-  // Sidebar content component for reuse
-  const SidebarContent = ({ isMobile = false }: { isMobile?: boolean }) => (
+  // Sidebar content component
+  const SidebarContent = () => (
     <div className="flex flex-col h-full">
       {/* Search */}
       <div className="p-4 border-b border-gray-700/50">
@@ -240,24 +233,8 @@ export function MainLayout() {
         <SidebarContent />
       </div>
 
-      {/* Mobile Menu Button */}
-      <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
-        <SheetTrigger asChild>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="lg:hidden fixed top-4 left-4 z-50 bg-white dark:bg-gray-800 shadow-md rounded-lg"
-          >
-            <Menu className="h-5 w-5" />
-          </Button>
-        </SheetTrigger>
-        <SheetContent side="left" className="w-64 p-0 bg-gray-900 text-gray-100 border-gray-700">
-          <SidebarContent isMobile />
-        </SheetContent>
-      </Sheet>
-
       {/* Main Content */}
-      <div className="flex-1 flex flex-col lg:ml-64">
+      <div className="flex-1 flex flex-col ml-0 lg:ml-64">
         <Header />
         <main className="flex-1 container mx-auto p-4 lg:p-6 max-w-none">
           <div className="animate-fade-in">
