@@ -21,8 +21,10 @@ import {
   Send, 
   Zap,
   Loader2,
+  AlertCircle,
 } from 'lucide-react';
 import { AIMessage } from '@/components/ai/ai-message';
+import { TaskData } from '@/lib/openai-service';
 
 interface AIAssistantPanelProps {
   open: boolean;
@@ -34,13 +36,14 @@ interface Message {
   content: string;
   sender: 'user' | 'assistant';
   timestamp: string;
+  tasks?: TaskData[];
 }
 
 export function AIAssistantPanel({ open, onClose }: AIAssistantPanelProps) {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: uuidv4(),
-      content: "Hi there! ✨ I'm your AI assistant. I can help you manage tasks, generate insights, or answer questions about your productivity. How can I help you today?",
+      content: "Hi there! ✨ I'm your AI assistant powered by OpenAI. I can help you create tasks using natural language. Just tell me what you need to do and I'll create organized tasks for you!",
       sender: 'assistant',
       timestamp: new Date().toISOString(),
     },
@@ -48,8 +51,9 @@ export function AIAssistantPanel({ open, onClose }: AIAssistantPanelProps) {
   
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const endOfMessagesRef = useRef<HTMLDivElement>(null);
-  const { tasks, addTask, categories } = useTodoStore();
+  const { addTask } = useTodoStore();
   const { toast } = useToast();
 
   // Auto-scroll to bottom when messages change
@@ -60,9 +64,8 @@ export function AIAssistantPanel({ open, onClose }: AIAssistantPanelProps) {
   }, [messages]);
 
   const handleSendMessage = async () => {
-    if (!input.trim()) return;
+    if (!input.trim() || isTyping) return;
     
-    // Add user message
     const userMessage: Message = {
       id: uuidv4(),
       content: input.trim(),
@@ -73,126 +76,74 @@ export function AIAssistantPanel({ open, onClose }: AIAssistantPanelProps) {
     setMessages(prev => [...prev, userMessage]);
     setInput('');
     setIsTyping(true);
+    setError(null);
     
-    // Simulate AI processing
-    setTimeout(() => {
-      const userInput = input.toLowerCase().trim();
-      let response = '';
+    try {
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ message: userMessage.content }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.details || 'Failed to get response from AI');
+      }
+
+      const data = await response.json();
       
-      // Simple AI responses
-      if (userInput.includes('add task') || userInput.includes('create task')) {
-        const titleMatch = userInput.match(/task\s+(?:called|named|titled)?\s*['":]?([^'":]*)['"]?/i);
-        const title = titleMatch ? titleMatch[1].trim() : 'New task';
-        
-        // Try to extract priority
-        let priority: 'low' | 'medium' | 'high' | 'urgent' = 'medium';
-        if (userInput.includes('urgent')) priority = 'urgent';
-        else if (userInput.includes('high priority')) priority = 'high';
-        else if (userInput.includes('low priority')) priority = 'low';
-        
-        // Try to extract category
-        let category: string | undefined;
-        categories.forEach(cat => {
-          if (userInput.includes(cat.name.toLowerCase())) {
-            category = cat.name;
-          }
-        });
-        
-        // Add the task
-        addTask({
-          title: title,
-          description: `Created via AI assistant: "${userInput}"`,
-          completed: false,
-          priority: priority,
-          category: category,
-          aiGenerated: true,
-        });
-        
-        response = `✨ I've created a new ${priority} priority task "${title}"${category ? ` in the ${category} category` : ''}. Ready to tackle it?`;
-      } 
-      else if (userInput.includes('how many task') || userInput.includes('task count')) {
-        const activeCount = tasks.filter(t => !t.completed).length;
-        const completedCount = tasks.filter(t => t.completed).length;
-        
-        response = `📊 You have ${activeCount} active tasks and ${completedCount} completed tasks, for a total of ${tasks.length} tasks. ${activeCount > 0 ? "Let's get some done! 💪" : "You're all caught up! 🎉"}`;
-      } 
-      else if (userInput.includes('overdue')) {
-        const today = new Date().toISOString().split('T')[0];
-        const overdueTasks = tasks.filter(t => 
-          t.dueDate && t.dueDate < today && !t.completed
-        );
-        
-        if (overdueTasks.length === 0) {
-          response = "🎉 Great news! You don't have any overdue tasks. You're staying on top of things!";
-        } else {
-          response = `⚠️ You have ${overdueTasks.length} overdue task${overdueTasks.length > 1 ? 's' : ''}:\n\n`;
-          overdueTasks.forEach(task => {
-            response += `• "${task.title}" (due: ${format(new Date(task.dueDate!), 'MMM dd')})\n`;
+      // Create tasks if any were generated
+      if (data.tasks && data.tasks.length > 0) {
+        for (const taskData of data.tasks) {
+          await addTask({
+            title: taskData.title,
+            description: taskData.description,
+            completed: false,
+            priority: taskData.priority,
+            category: taskData.category,
+            dueDate: taskData.dueDate,
+            aiGenerated: true,
           });
-          response += "\nLet's prioritize these! 🚀";
         }
-      } 
-      else if (userInput.includes('help')) {
-        response = `🤖 I'm here to help! Here are some things you can ask me:
 
-💡 **Task Management:**
-• "Add a task to prepare presentation for work"
-• "How many tasks do I have?"
-• "What are my overdue tasks?"
-
-📅 **Planning:**
-• "What tasks do I have for today?"
-• "Show me my high priority tasks"
-
-🎯 **Productivity:**
-• "Give me a productivity tip"
-• "Analyze my work habits"
-
-Just ask naturally - I'll understand! ✨`;
-      }
-      else if (userInput.includes('today') || userInput.includes('do today')) {
-        const today = new Date().toISOString().split('T')[0];
-        const todayTasks = tasks.filter(t => 
-          t.dueDate === today && !t.completed
-        );
-        
-        if (todayTasks.length === 0) {
-          response = "📅 You don't have any tasks scheduled for today. Perfect time to get ahead on tomorrow's work! 🚀";
-        } else {
-          response = `📋 You have ${todayTasks.length} task${todayTasks.length > 1 ? 's' : ''} for today:\n\n`;
-          todayTasks.forEach(task => {
-            response += `• "${task.title}" (${task.priority} priority)\n`;
-          });
-          response += "\nYou've got this! 💪";
-        }
-      }
-      else if (userInput.includes('productivity tip') || userInput.includes('tip')) {
-        const tips = [
-          "🍅 Try the Pomodoro Technique: 25 minutes of focused work followed by a 5-minute break. It's amazing for maintaining focus!",
-          "🎯 Set only 1-3 important tasks for each day to avoid feeling overwhelmed. Quality over quantity!",
-          "📝 Review your task list at the end of each day and plan for tomorrow. Future you will thank you!",
-          "🧩 Break down large tasks into smaller, more manageable subtasks. Small wins build momentum!",
-          "⏰ Consider using time blocking to allocate specific times for different types of work. Structure creates freedom!",
-          "🌅 Start your day by completing one important task before checking emails or messages. Win the morning, win the day!",
-        ];
-        
-        response = tips[Math.floor(Math.random() * tips.length)];
-      }
-      else {
-        response = "🤔 I'm not quite sure about that one. Try asking me to add tasks, check overdue items, see today's tasks, or get productivity tips. I'm here to help make you more productive! ✨";
+        toast({
+          title: "✨ Tasks Created!",
+          description: `I've created ${data.tasks.length} task${data.tasks.length > 1 ? 's' : ''} for you.`,
+          duration: 3000,
+        });
       }
       
-      // Add AI response
       const aiMessage: Message = {
         id: uuidv4(),
-        content: response,
+        content: data.message,
+        sender: 'assistant',
+        timestamp: new Date().toISOString(),
+        tasks: data.tasks,
+      };
+      
+      setMessages(prev => [...prev, aiMessage]);
+    } catch (error) {
+      console.error('Error sending message:', error);
+      setError(error instanceof Error ? error.message : 'An unexpected error occurred');
+      
+      const errorMessage: Message = {
+        id: uuidv4(),
+        content: "I'm sorry, I encountered an error while processing your request. Please make sure your OpenAI API key and Assistant ID are properly configured.",
         sender: 'assistant',
         timestamp: new Date().toISOString(),
       };
       
-      setMessages(prev => [...prev, aiMessage]);
+      setMessages(prev => [...prev, errorMessage]);
+    } finally {
       setIsTyping(false);
-    }, 1500);
+    }
+  };
+
+  const handleQuickAction = (action: string) => {
+    setInput(action);
+    setTimeout(() => handleSendMessage(), 100);
   };
 
   return (
@@ -205,19 +156,60 @@ Just ask naturally - I'll understand! ✨`;
           <div>
             <SheetTitle className="text-lg font-semibold">AI Assistant</SheetTitle>
             <SheetDescription className="text-xs text-gray-600 dark:text-gray-400">
-              Powered by advanced AI ✨
+              Powered by OpenAI ✨
             </SheetDescription>
           </div>
         </SheetHeader>
+
+        {/* Error Banner */}
+        {error && (
+          <div className="px-4 py-3 bg-red-50 dark:bg-red-900/20 border-b border-red-200 dark:border-red-800">
+            <div className="flex items-center gap-2 text-red-600 dark:text-red-400">
+              <AlertCircle className="h-4 w-4" />
+              <span className="text-sm">{error}</span>
+            </div>
+          </div>
+        )}
         
         <ScrollArea className="flex-1 px-4 py-4">
           <div className="space-y-4">
             {messages.map(message => (
-              <AIMessage
-                key={message.id}
-                message={message.content}
-                isUser={message.sender === 'user'}
-              />
+              <div key={message.id}>
+                <AIMessage
+                  message={message.content}
+                  isUser={message.sender === 'user'}
+                />
+                
+                {/* Show created tasks */}
+                {message.tasks && message.tasks.length > 0 && (
+                  <div className="mt-2 ml-11 space-y-2">
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Created tasks:</p>
+                    {message.tasks.map((task, index) => (
+                      <div key={index} className="p-2 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+                        <p className="text-sm font-medium text-green-800 dark:text-green-200">{task.title}</p>
+                        {task.description && (
+                          <p className="text-xs text-green-600 dark:text-green-300 mt-1">{task.description}</p>
+                        )}
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className="text-xs px-2 py-0.5 bg-green-100 dark:bg-green-800 text-green-700 dark:text-green-200 rounded">
+                            {task.priority}
+                          </span>
+                          {task.category && (
+                            <span className="text-xs px-2 py-0.5 bg-blue-100 dark:bg-blue-800 text-blue-700 dark:text-blue-200 rounded">
+                              {task.category}
+                            </span>
+                          )}
+                          {task.dueDate && (
+                            <span className="text-xs text-gray-500 dark:text-gray-400">
+                              Due: {format(new Date(task.dueDate), 'MMM d')}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             ))}
             
             {isTyping && (
@@ -233,14 +225,45 @@ Just ask naturally - I'll understand! ✨`;
             <div ref={endOfMessagesRef} />
           </div>
         </ScrollArea>
+
+        {/* Quick Actions */}
+        <div className="px-4 py-2 border-t border-gray-200/50 dark:border-gray-700/50">
+          <div className="flex flex-wrap gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handleQuickAction("Create a task to review my monthly budget")}
+              className="text-xs"
+            >
+              💰 Budget Review
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handleQuickAction("I need to prepare for my presentation next week")}
+              className="text-xs"
+            >
+              📊 Presentation
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handleQuickAction("Create workout tasks for this week")}
+              className="text-xs"
+            >
+              💪 Workout
+            </Button>
+          </div>
+        </div>
         
         <SheetFooter className="px-4 py-4 border-t border-gray-200/50 dark:border-gray-700/50 bg-gray-50/50 dark:bg-gray-800/50">
           <div className="flex w-full items-center space-x-3">
             <Input 
-              placeholder="Ask me anything..." 
+              placeholder="Tell me what you need to do..." 
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
+              disabled={isTyping}
               className="flex-1 rounded-xl border-gray-200 dark:border-gray-700 focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500"
             />
             <Button 
@@ -249,15 +272,17 @@ Just ask naturally - I'll understand! ✨`;
               size="icon"
               className="rounded-xl bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 shadow-md hover:shadow-lg transition-all duration-200 hover:scale-105"
             >
-              <Send className="h-4 w-4" />
+              {isTyping ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Send className="h-4 w-4" />
+              )}
             </Button>
             <Button 
-              onClick={() => {
-                setInput("Give me a productivity tip");
-                setTimeout(handleSendMessage, 100);
-              }}
+              onClick={() => handleQuickAction("Give me a productivity tip")}
               variant="outline"
               size="icon"
+              disabled={isTyping}
               className="rounded-xl border-purple-200 text-purple-600 hover:bg-purple-50 dark:border-purple-700 dark:text-purple-400 dark:hover:bg-purple-900/20 transition-all duration-200 hover:scale-105"
             >
               <Zap className="h-4 w-4" />
