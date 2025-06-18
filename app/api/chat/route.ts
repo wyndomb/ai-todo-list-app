@@ -45,12 +45,37 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Chat API Error:', error);
     
+    // Provide specific error handling based on error type
+    let fallbackMessage = "I'm having trouble connecting to the AI service right now, but I can still help you with task management using my built-in responses! Try asking me to add a task or check your productivity stats.";
+    let errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+    
+    // Handle specific OpenAI connection errors
+    if (error instanceof Error) {
+      if (error.message.includes('Unable to connect to OpenAI API')) {
+        fallbackMessage = "I'm having trouble connecting to the OpenAI service. This might be due to network issues or an invalid API key. Please check your internet connection and API key configuration.";
+      } else if (error.message.includes('Invalid OpenAI API key')) {
+        fallbackMessage = "The OpenAI API key appears to be invalid. Please check your OPENAI_API_KEY environment variable and ensure it's a valid key with the necessary permissions.";
+      } else if (error.message.includes('rate limit')) {
+        fallbackMessage = "The OpenAI API rate limit has been exceeded. Please wait a moment and try again.";
+      } else if (error.message.includes('temporarily unavailable')) {
+        fallbackMessage = "The OpenAI service is temporarily unavailable. Please try again in a few minutes.";
+      }
+    }
+    
     // Return a fallback response instead of an error
     return NextResponse.json({
       success: false,
       fallback: true,
-      message: "I'm having trouble connecting to the AI service right now, but I can still help you with task management using my built-in responses! Try asking me to add a task or check your productivity stats.",
-      error: error instanceof Error ? error.message : 'Unknown error occurred'
+      message: fallbackMessage,
+      error: errorMessage,
+      troubleshooting: {
+        steps: [
+          "Check your internet connection",
+          "Verify your OpenAI API key is valid and has credits",
+          "Ensure the OPENAI_ASSISTANT_ID is correct",
+          "Try again in a few moments if this is a temporary issue"
+        ]
+      }
     });
   }
 }
