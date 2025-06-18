@@ -64,14 +64,26 @@ export function TaskList({ tasks }: TaskListProps) {
   // Group parent tasks by status
   const today = new Date().toISOString().split('T')[0];
   
+  // Overdue tasks - tasks that are not completed and have a due date in the past
+  const overdueTasks = organizedTasks.parentTasks.filter(task => 
+    !task.completed && 
+    task.dueDate && 
+    isPast(new Date(task.dueDate)) && 
+    !isToday(new Date(task.dueDate))
+  );
+
+  // Focus tasks - today's tasks and urgent tasks, but exclude overdue tasks
   const focusTasks = organizedTasks.parentTasks.filter(task => 
     !task.completed && 
+    !overdueTasks.includes(task) && // Exclude tasks that are already in overdue
     ((task.dueDate && isToday(new Date(task.dueDate))) || 
      task.priority === 'urgent')
   );
 
   const dueSoonTasks = organizedTasks.parentTasks.filter(task =>
     !task.completed &&
+    !overdueTasks.includes(task) && // Exclude overdue tasks
+    !focusTasks.includes(task) && // Exclude focus tasks
     task.dueDate &&
     isFuture(new Date(task.dueDate)) &&
     !isToday(new Date(task.dueDate)) &&
@@ -80,6 +92,9 @@ export function TaskList({ tasks }: TaskListProps) {
 
   const backlogTasks = organizedTasks.parentTasks.filter(task =>
     !task.completed &&
+    !overdueTasks.includes(task) && // Exclude overdue tasks
+    !focusTasks.includes(task) && // Exclude focus tasks
+    !dueSoonTasks.includes(task) && // Exclude due soon tasks
     (!task.dueDate || new Date(task.dueDate) > addDays(new Date(), 7))
   );
 
@@ -163,6 +178,8 @@ export function TaskList({ tasks }: TaskListProps) {
   return (
     <div className="w-full max-w-none">
       <div className="space-y-6">
+        {/* Overdue tasks section - displayed first with high priority */}
+        {renderTaskGroup(overdueTasks, "Overdue", "🚨")}
         {renderTaskGroup(focusTasks, "Focus for Today", "⚡️")}
         {renderTaskGroup(dueSoonTasks, "Due Soon", "⏳")}
         {renderTaskGroup(backlogTasks, "Backlog", "🧠")}
