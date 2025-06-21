@@ -27,9 +27,10 @@ interface TodoState {
   clearTasks: () => Promise<void>;
   
   // Category actions
-  addCategory: (category: Omit<Category, 'id'>) => void;
-  updateCategory: (id: string, updates: Partial<Omit<Category, 'id'>>) => void;
-  deleteCategory: (id: string) => void;
+  fetchCategories: () => Promise<void>;
+  addCategory: (category: Omit<Category, 'id' | 'createdAt'>) => Promise<void>;
+  updateCategory: (id: string, updates: Partial<Omit<Category, 'id'>>) => Promise<void>;
+  deleteCategory: (id: string) => Promise<void>;
   
   // Tag actions
   addTag: (tag: Omit<Tag, 'id'>) => void;
@@ -76,15 +77,29 @@ const taskToSupabaseFormat = (task: Partial<Task>) => ({
   parent_id: task.parentId || null,
 });
 
+// Helper function to convert Supabase row to Category
+const supabaseRowToCategory = (row: any): Category => ({
+  id: row.id,
+  name: row.name,
+  color: row.color,
+  icon: row.icon,
+  createdAt: row.created_at,
+  userId: row.user_id,
+});
+
+// Helper function to convert Category to Supabase insert/update format
+const categoryToSupabaseFormat = (category: Partial<Category>) => ({
+  id: category.id,
+  name: category.name,
+  color: category.color,
+  icon: category.icon,
+  created_at: category.createdAt,
+  user_id: category.userId || '00000000-0000-0000-0000-000000000000',
+});
+
 export const useTodoStore = create<TodoState>()((set, get) => ({
   tasks: [],
-  categories: [
-    { id: uuidv4(), name: 'Work', color: '#818cf8', icon: 'briefcase' },
-    { id: uuidv4(), name: 'Personal', color: '#22d3ee', icon: 'user' },
-    { id: uuidv4(), name: 'Health', color: '#22c55e', icon: 'heart' },
-    { id: uuidv4(), name: 'Finance', color: '#eab308', icon: 'dollar-sign' },
-    { id: uuidv4(), name: 'Education', color: '#ec4899', icon: 'book-open' },
-  ],
+  categories: [],
   tags: [
     { id: uuidv4(), name: 'Important' },
     { id: uuidv4(), name: 'Urgent' },
@@ -135,6 +150,39 @@ export const useTodoStore = create<TodoState>()((set, get) => ({
     } catch (error) {
       console.error('Error fetching tasks:', error);
       set({ isLoading: false });
+    }
+  },
+
+  fetchCategories: async () => {
+    if (!supabase) {
+      console.warn('Supabase not configured, using default categories');
+      // Use default categories as fallback
+      const defaultCategories: Category[] = [
+        { id: uuidv4(), name: 'Work', color: '#818cf8', icon: 'briefcase' },
+        { id: uuidv4(), name: 'Personal', color: '#22d3ee', icon: 'user' },
+        { id: uuidv4(), name: 'Health', color: '#22c55e', icon: 'heart' },
+        { id: uuidv4(), name: 'Finance', color: '#eab308', icon: 'dollar-sign' },
+        { id: uuidv4(), name: 'Education', color: '#ec4899', icon: 'book-open' },
+      ];
+      set({ categories: defaultCategories });
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('user_categories')
+        .select('*')
+        .order('created_at', { ascending: true });
+      
+      if (error) {
+        console.error('Error fetching categories:', error);
+        return;
+      }
+      
+      const categories = data?.map(supabaseRowToCategory) || [];
+      set({ categories });
+    } catch (error) {
+      console.error('Error fetching categories:', error);
     }
   },
   
@@ -400,19 +448,122 @@ export const useTodoStore = create<TodoState>()((set, get) => ({
     }
   },
   
-  addCategory: (category) => set((state) => ({
-    categories: [...state.categories, { ...category, id: uuidv4() }],
-  })),
+  addCategory: async (category) => {
+    const newCategory: Category = {
+      ...category,
+      id: uuidv4(),
+      createdAt: new Date().toISOString(),
+    };
+
+    if (!supabase) {
+      // Fallback to in-memory storage
+      set((state) => ({
+        categories: [...state.categories, newCategory],
+      }));
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('user_categories')
+        .insert([categoryToSupabaseFormat(newCategory)]);
+      
+      if (error) {
+        console.error('Error adding category:', error);
+        return;
+      }
+      
+      set((state) => ({
+        categories: [...state.categories, newCategory],
+      }));
+    } catch (error) {
+      console.error('Error adding category:', error);
+    }
+  },
   
-  updateCategory: (id, updates) => set((state) => ({
-    categories: state.categories.map((category) =>
-      category.id === id ? { ...category, ...updates } : category
-    ),
-  })),
+  updateCategory: async (id, updates) => {
+    if (!supabase) {
+      // Fallback to in-memory storage
+      set((state) => ({
+        categories: state.categories.map((category) =>
+          category.id === id ? { ...category, ...updates } : category
+        ),
+      }));
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('user_categories')
+        .update(categoryToSupabaseFormat(updates))
+        .eq('id', id);
+      
+      if (error) {
+        console.error('Error updating category:', error);
+        return;
+      }
+      
+      set((state) => ({
+        categories: state.categories.map((category) =>
+          category.id === id ? { ...category, ...updates } : category
+        ),
+      }));
+    } catch (error) {
+      console.error('Error updating category:', error);
+    }
+  },
   
-  deleteCategory: (id) => set((state) => ({
-    categories: state.categories.filter((category) => category.id !== id),
-  })),
+  deleteCategory: async (id) => {
+    const categoryToDelete = get().categories.find(c => c.id === id);
+    if (!categoryToDelete) return;
+
+    if (!supabase) {
+      // Fallback to in-memory storage
+      set((state) => ({
+        categories: state.categories.filter((category) => category.id !== id),
+        tasks: state.tasks.map((task) =>
+          task.category === categoryToDelete.name ? { ...task, category: undefined } : task
+        ),
+      }));
+      return;
+    }
+
+    try {
+      // First, update all tasks that use this category to have no category
+      const tasksWithCategory = get().tasks.filter(task => task.category === categoryToDelete.name);
+      if (tasksWithCategory.length > 0) {
+        const { error: taskUpdateError } = await supabase
+          .from('tasks')
+          .update({ category: null })
+          .in('id', tasksWithCategory.map(t => t.id));
+        
+        if (taskUpdateError) {
+          console.error('Error updating tasks when deleting category:', taskUpdateError);
+          return;
+        }
+      }
+
+      // Then delete the category
+      const { error } = await supabase
+        .from('user_categories')
+        .delete()
+        .eq('id', id);
+      
+      if (error) {
+        console.error('Error deleting category:', error);
+        return;
+      }
+      
+      set((state) => ({
+        categories: state.categories.filter((category) => category.id !== id),
+        tasks: state.tasks.map((task) =>
+          task.category === categoryToDelete.name ? { ...task, category: undefined } : task
+        ),
+      }));
+    } catch (error) {
+      console.error('Error deleting category:', error);
+    }
+  },
   
   addTag: (tag) => set((state) => ({
     tags: [...state.tags, { ...tag, id: uuidv4() }],

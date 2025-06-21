@@ -5,12 +5,13 @@ import { MainLayout } from '@/components/layout/main-layout';
 import { useTodoStore } from '@/lib/store';
 
 export default function Home() {
-  const { fetchTasks } = useTodoStore();
+  const { fetchTasks, fetchCategories } = useTodoStore();
   
-  // Fetch tasks when the app loads
+  // Fetch tasks and categories when the app loads
   useEffect(() => {
     fetchTasks();
-  }, [fetchTasks]);
+    fetchCategories();
+  }, [fetchTasks, fetchCategories]);
 
   return <MainLayout />;
 }
