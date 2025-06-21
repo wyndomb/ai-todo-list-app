@@ -35,7 +35,30 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const result = await createTaskWithAI(message);
+    // Get current date and time information
+    const now = new Date();
+    const currentDate = now.toISOString().split('T')[0]; // YYYY-MM-DD format
+    const currentTime = now.toLocaleTimeString('en-US', { 
+      hour12: false, 
+      timeZone: 'UTC' 
+    });
+    const dayOfWeek = now.toLocaleDateString('en-US', { 
+      weekday: 'long',
+      timeZone: 'UTC'
+    });
+
+    // Create context-aware message with current date information
+    const contextualMessage = `Current date and time context:
+- Today's date: ${currentDate} (${dayOfWeek})
+- Current time: ${currentTime} UTC
+- When user says "today", it refers to ${currentDate}
+- When user says "tomorrow", it refers to ${new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString().split('T')[0]}
+
+User's request: ${message}
+
+Please create tasks with the correct due dates based on this current date context. If the user mentions "today", use ${currentDate} as the due date.`;
+
+    const result = await createTaskWithAI(contextualMessage);
     
     return NextResponse.json({
       success: true,
