@@ -8,7 +8,8 @@ import { Dashboard } from '@/components/dashboard/dashboard';
 import { CalendarView } from '@/components/dashboard/calendar-view';
 import { UpcomingView } from '@/components/dashboard/upcoming-view';
 import { InsightsDashboard } from '@/components/dashboard/insights-dashboard';
-import { CategoryManager } from '@/components/categories/category-manager';
+import { AddCategoryDialog } from '@/components/categories/add-category-dialog';
+import { CategoryDropdown } from '@/components/categories/category-dropdown';
 import { useTodoStore } from '@/lib/store';
 import { cn } from '@/lib/utils';
 import { 
@@ -36,8 +37,7 @@ import { Button } from '@/components/ui/button';
 
 export function MainLayout() {
   const [aiPanelOpen, setAiPanelOpen] = useState(false);
-  const [categoryManagerOpen, setCategoryManagerOpen] = useState(false);
-  const [categoryManagerMode, setCategoryManagerMode] = useState<'view' | 'add'>('view');
+  const [addCategoryOpen, setAddCategoryOpen] = useState(false);
   const [activeView, setActiveView] = useState<'today' | 'upcoming' | 'calendar' | 'insights'>('today');
   const [isProjectsOpen, setIsProjectsOpen] = useState(true);
   const { tasks, categories, filterBy, setFilter, isLoading, fetchCategories } = useTodoStore();
@@ -121,16 +121,6 @@ export function MainLayout() {
     setActiveView(view);
   };
 
-  const openCategoryManagerInAddMode = () => {
-    setCategoryManagerMode('add');
-    setCategoryManagerOpen(true);
-  };
-
-  const openCategoryManagerInViewMode = () => {
-    setCategoryManagerMode('view');
-    setCategoryManagerOpen(true);
-  };
-
   // Show loading state while fetching initial data
   if (isLoading && tasks.length === 0) {
     return (
@@ -201,7 +191,7 @@ export function MainLayout() {
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={openCategoryManagerInAddMode}
+                      onClick={() => setAddCategoryOpen(true)}
                       className="h-8 w-8 text-gray-400 hover:text-gray-300 hover:bg-gray-800"
                     >
                       <Plus className="h-4 w-4" />
@@ -216,29 +206,33 @@ export function MainLayout() {
             
             <CollapsibleContent className="space-y-1">
               {categories.map((category) => (
-                <button
+                <div
                   key={category.id}
-                  onClick={() => handleCategoryFilter(category.name)}
-                  className={cn(
-                    "w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-all duration-200",
-                    filterBy.category === category.name
-                      ? "bg-gray-700 text-white"
-                      : "text-gray-400 hover:bg-gray-800 hover:text-gray-300"
-                  )}
+                  className="group flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-all duration-200 text-gray-400 hover:bg-gray-800 hover:text-gray-300"
                 >
-                  <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => handleCategoryFilter(category.name)}
+                    className={cn(
+                      "flex items-center gap-3 flex-1 text-left",
+                      filterBy.category === category.name && "text-white"
+                    )}
+                  >
                     <Hash 
                       className="h-4 w-4" 
                       style={{ color: category.color }}
                     />
                     <span>{category.name}</span>
+                  </button>
+                  
+                  <div className="flex items-center gap-2">
+                    {categoryTaskCounts[category.name] > 0 && (
+                      <span className="px-2 py-0.5 text-xs rounded-full bg-gray-700 text-gray-300 font-medium">
+                        {categoryTaskCounts[category.name]}
+                      </span>
+                    )}
+                    <CategoryDropdown category={category} />
                   </div>
-                  {categoryTaskCounts[category.name] > 0 && (
-                    <span className="px-2 py-0.5 text-xs rounded-full bg-gray-700 text-gray-300 font-medium">
-                      {categoryTaskCounts[category.name]}
-                    </span>
-                  )}
-                </button>
+                </div>
               ))}
               
               {categories.length === 0 && (
@@ -247,7 +241,7 @@ export function MainLayout() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={openCategoryManagerInAddMode}
+                    onClick={() => setAddCategoryOpen(true)}
                     className="text-xs text-gray-400 hover:text-gray-300"
                   >
                     Create your first category
@@ -289,11 +283,7 @@ export function MainLayout() {
         </main>
         <Footer />
         <AIAssistantPanel open={aiPanelOpen} onClose={() => setAiPanelOpen(false)} />
-        <CategoryManager 
-          open={categoryManagerOpen} 
-          onOpenChange={setCategoryManagerOpen}
-          initialMode={categoryManagerMode}
-        />
+        <AddCategoryDialog open={addCategoryOpen} onOpenChange={setAddCategoryOpen} />
       </div>
 
       {/* Mobile Bottom Navigation */}
