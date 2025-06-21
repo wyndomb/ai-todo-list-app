@@ -453,6 +453,9 @@ export const useTodoStore = create<TodoState>()((set, get) => ({
       ...category,
       id: uuidv4(),
       createdAt: new Date().toISOString(),
+      // Ensure default values are set
+      color: category.color || '#6b7280',
+      icon: category.icon || 'folder',
     };
 
     if (!supabase) {
