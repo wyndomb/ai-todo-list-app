@@ -134,7 +134,7 @@ export function UpcomingView() {
                     key={dateStr}
                     onClick={() => setSelectedDate(day)}
                     className={cn(
-                      "flex flex-col items-center p-2 md:p-3 rounded-xl transition-all duration-200 min-w-[60px] md:min-w-[80px]",
+                      "flex flex-col items-center p-2 md:p-3 rounded-xl transition-all duration-200 min-w-[48px] sm:min-w-[60px] md:min-w-[80px]",
                       isSelected
                         ? "bg-primary text-primary-foreground shadow-md"
                         : isToday_
