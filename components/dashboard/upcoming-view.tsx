@@ -117,12 +117,12 @@ export function UpcomingView() {
               variant="ghost"
               size="icon"
               onClick={() => navigateWeek('prev')}
-              className="rounded-full h-8 w-8 md:h-10 md:w-10"
+              className="rounded-full h-8 w-8 md:h-10 md:w-10 flex-shrink-0"
             >
               <ChevronLeft className="h-4 w-4" />
             </Button>
 
-            <div className="flex items-center gap-1 flex-1 justify-center overflow-x-auto">
+            <div className="flex items-center gap-1 overflow-x-auto px-2">
               {weekDays.map((day) => {
                 const dateStr = format(day, 'yyyy-MM-dd');
                 const taskCount = dayTaskCounts[dateStr];
@@ -134,7 +134,7 @@ export function UpcomingView() {
                     key={dateStr}
                     onClick={() => setSelectedDate(day)}
                     className={cn(
-                      "flex flex-col items-center p-2 md:p-3 rounded-xl transition-all duration-200 min-w-[48px] sm:min-w-[60px] md:min-w-[80px]",
+                      "flex flex-col items-center p-2 md:p-3 rounded-xl transition-all duration-200 min-w-[48px] sm:min-w-[60px] md:min-w-[80px] flex-shrink-0",
                       isSelected
                         ? "bg-primary text-primary-foreground shadow-md"
                         : isToday_
@@ -171,7 +171,7 @@ export function UpcomingView() {
               variant="ghost"
               size="icon"
               onClick={() => navigateWeek('next')}
-              className="rounded-full h-8 w-8 md:h-10 md:w-10"
+              className="rounded-full h-8 w-8 md:h-10 md:w-10 flex-shrink-0"
             >
               <ChevronRight className="h-4 w-4" />
             </Button>
