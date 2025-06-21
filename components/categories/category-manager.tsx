@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -22,6 +22,12 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -33,7 +39,8 @@ import {
   Palette,
   Hash,
   Save,
-  X
+  X,
+  MoreHorizontal
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
@@ -58,6 +65,7 @@ type CategoryFormValues = z.infer<typeof categorySchema>;
 interface CategoryManagerProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  initialMode?: 'view' | 'add';
 }
 
 // Predefined color palette
@@ -85,7 +93,7 @@ const iconOptions = [
   'folder', 'file-text', 'settings', 'tool', 'paint-brush'
 ];
 
-export function CategoryManager({ open, onOpenChange }: CategoryManagerProps) {
+export function CategoryManager({ open, onOpenChange, initialMode = 'view' }: CategoryManagerProps) {
   const { categories, addCategory, updateCategory, deleteCategory, tasks } = useTodoStore();
   const { toast } = useToast();
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
@@ -104,6 +112,13 @@ export function CategoryManager({ open, onOpenChange }: CategoryManagerProps) {
   const editForm = useForm<CategoryFormValues>({
     resolver: zodResolver(categorySchema),
   });
+
+  // Set initial mode when dialog opens
+  useEffect(() => {
+    if (open && initialMode === 'add') {
+      startAdding();
+    }
+  }, [open, initialMode]);
 
   const handleAddCategory = async (data: CategoryFormValues) => {
     // Check if category name already exists
@@ -429,26 +444,33 @@ export function CategoryManager({ open, onOpenChange }: CategoryManagerProps) {
                           </Badge>
                         </div>
 
-                        <div className="flex items-center gap-2">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => startEditing(category)}
-                            className="gap-2"
-                          >
-                            <Edit3 className="h-4 w-4" />
-                            Edit
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setDeletingCategory(category)}
-                            className="gap-2 text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                            Delete
-                          </Button>
-                        </div>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
+                            >
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-40">
+                            <DropdownMenuItem 
+                              onClick={() => startEditing(category)}
+                              className="gap-2"
+                            >
+                              <Edit3 className="h-4 w-4" />
+                              Edit
+                            </DropdownMenuItem>
+                            <DropdownMenuItem 
+                              onClick={() => setDeletingCategory(category)}
+                              className="gap-2 text-red-600 focus:text-red-600 dark:text-red-400 dark:focus:text-red-400"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                              Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </div>
                     )}
                   </div>

@@ -19,7 +19,7 @@ import {
   Sparkles,
   Hash,
   ChevronDown,
-  Settings,
+  Plus,
 } from 'lucide-react';
 import {
   Tooltip,
@@ -37,6 +37,7 @@ import { Button } from '@/components/ui/button';
 export function MainLayout() {
   const [aiPanelOpen, setAiPanelOpen] = useState(false);
   const [categoryManagerOpen, setCategoryManagerOpen] = useState(false);
+  const [categoryManagerMode, setCategoryManagerMode] = useState<'view' | 'add'>('view');
   const [activeView, setActiveView] = useState<'today' | 'upcoming' | 'calendar' | 'insights'>('today');
   const [isProjectsOpen, setIsProjectsOpen] = useState(true);
   const { tasks, categories, filterBy, setFilter, isLoading, fetchCategories } = useTodoStore();
@@ -120,6 +121,16 @@ export function MainLayout() {
     setActiveView(view);
   };
 
+  const openCategoryManagerInAddMode = () => {
+    setCategoryManagerMode('add');
+    setCategoryManagerOpen(true);
+  };
+
+  const openCategoryManagerInViewMode = () => {
+    setCategoryManagerMode('view');
+    setCategoryManagerOpen(true);
+  };
+
   // Show loading state while fetching initial data
   if (isLoading && tasks.length === 0) {
     return (
@@ -175,7 +186,7 @@ export function MainLayout() {
                 <span>My Projects</span>
                 <div className="flex items-center gap-2">
                   <span className="text-xs bg-gray-700 px-2 py-0.5 rounded-full">
-                    {categories.length}/∞
+                    {categories.length}
                   </span>
                   <ChevronDown className={cn(
                     "h-4 w-4 transition-transform duration-200",
@@ -190,14 +201,14 @@ export function MainLayout() {
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={() => setCategoryManagerOpen(true)}
+                      onClick={openCategoryManagerInAddMode}
                       className="h-8 w-8 text-gray-400 hover:text-gray-300 hover:bg-gray-800"
                     >
-                      <Settings className="h-4 w-4" />
+                      <Plus className="h-4 w-4" />
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent>
-                    <p>Manage Categories</p>
+                    <p>Add New Category</p>
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
@@ -236,7 +247,7 @@ export function MainLayout() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => setCategoryManagerOpen(true)}
+                    onClick={openCategoryManagerInAddMode}
                     className="text-xs text-gray-400 hover:text-gray-300"
                   >
                     Create your first category
@@ -278,7 +289,11 @@ export function MainLayout() {
         </main>
         <Footer />
         <AIAssistantPanel open={aiPanelOpen} onClose={() => setAiPanelOpen(false)} />
-        <CategoryManager open={categoryManagerOpen} onOpenChange={setCategoryManagerOpen} />
+        <CategoryManager 
+          open={categoryManagerOpen} 
+          onOpenChange={setCategoryManagerOpen}
+          initialMode={categoryManagerMode}
+        />
       </div>
 
       {/* Mobile Bottom Navigation */}
