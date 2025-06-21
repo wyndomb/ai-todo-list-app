@@ -11,7 +11,6 @@ import { InsightsDashboard } from '@/components/dashboard/insights-dashboard';
 import { useTodoStore } from '@/lib/store';
 import { cn } from '@/lib/utils';
 import { 
-  Search,
   Sun, 
   CalendarDays, 
   Calendar,
@@ -127,14 +126,6 @@ export function MainLayout() {
   // Sidebar content component
   const SidebarContent = () => (
     <div className="flex flex-col h-full">
-      {/* Search */}
-      <div className="p-4 border-b border-gray-700/50">
-        <div className="flex items-center gap-3 text-gray-300">
-          <Search className="h-5 w-5" />
-          <span className="text-sm font-medium">Search</span>
-        </div>
-      </div>
-
       {/* Main Navigation */}
       <div className="flex-1 py-4">
         <div className="space-y-1 px-2">
