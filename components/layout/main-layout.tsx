@@ -118,6 +118,8 @@ export function MainLayout() {
   };
 
   const handleViewChange = (view: typeof activeView) => {
+    // Clear category filter when switching to main views
+    setFilter({ category: null });
     setActiveView(view);
   };
 
