@@ -109,7 +109,7 @@ export function SortableTaskList({ tasks, title, emoji }: SortableTaskListProps)
 
         <DragOverlay>
           {activeTask ? (
-            <div className="transform rotate-3 shadow-2xl">
+            <div className="shadow-2xl bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700">
               <TaskItem task={activeTask} />
             </div>
           ) : null}
