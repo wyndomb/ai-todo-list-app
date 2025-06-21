@@ -94,7 +94,7 @@ export function TaskItem({ task }: TaskItemProps) {
     <>
       <div 
         className={cn(
-          "relative flex items-start gap-3 md:gap-4 p-3 md:p-4 rounded-2xl border transition-all duration-200 cursor-pointer hover:shadow-md",
+          "relative flex items-start gap-2 md:gap-4 p-2 md:p-4 rounded-2xl border transition-all duration-200 cursor-pointer hover:shadow-md",
           task.completed 
             ? "bg-gray-50/50 dark:bg-gray-800/50 border-gray-200/50 dark:border-gray-700/50" 
             : "bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700",
@@ -120,7 +120,7 @@ export function TaskItem({ task }: TaskItemProps) {
         />
         
         <div className="flex-1 min-w-0">
-          <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2">
+          <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-1 md:gap-2">
             <div className="flex-1 min-w-0">
               <div className="flex items-start gap-2 mb-1">
                 <h3 
@@ -135,7 +135,7 @@ export function TaskItem({ task }: TaskItemProps) {
                   <Sparkles className="h-3 w-3 md:h-4 md:w-4 text-purple-500 flex-shrink-0 mt-0.5" />
                 )}
                 {subtasks.length > 0 && (
-                  <Badge variant="outline" className="text-xs px-1.5 py-0.5">
+                  <Badge variant="outline" className="text-xs px-1 py-0">
                     <List className="h-3 w-3 mr-1" />
                     {completedSubtasks}/{subtasks.length}
                   </Badge>
@@ -149,12 +149,12 @@ export function TaskItem({ task }: TaskItemProps) {
               )}
 
               {/* Mobile: Show badges below description */}
-              <div className="flex flex-wrap items-center gap-2 mt-2 sm:hidden">
+              <div className="flex flex-wrap items-center gap-1 md:gap-2 mt-1 md:mt-2 sm:hidden">
                 {task.category && (
                   <Badge 
                     variant="secondary" 
                     className={cn(
-                      "text-xs px-2 py-1 rounded-lg font-medium",
+                      "text-xs px-1.5 py-0.5 rounded-lg font-medium",
                       getCategoryColor(task.category)
                     )}
                   >
@@ -166,7 +166,7 @@ export function TaskItem({ task }: TaskItemProps) {
                   <Badge 
                     variant="outline"
                     className={cn(
-                      "text-xs px-2 py-1 rounded-lg flex items-center gap-1 font-medium",
+                      "text-xs px-1.5 py-0.5 rounded-lg flex items-center gap-1 font-medium",
                       isPastDue 
                         ? "bg-red-50 text-red-600 border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800" 
                         : isToday_ 
@@ -239,7 +239,7 @@ export function TaskItem({ task }: TaskItemProps) {
                   <Button 
                     variant="ghost" 
                     size="icon"
-                    className="h-8 w-8 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 flex-shrink-0"
+                    className="h-7 w-7 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 flex-shrink-0"
                   >
                     <MoreHorizontal className="h-4 w-4" />
                   </Button>
@@ -283,13 +283,13 @@ export function TaskItem({ task }: TaskItemProps) {
         </div>
 
         {/* Mobile: Show menu button at bottom right */}
-        <div className="sm:hidden absolute top-3 right-3">
+        <div className="sm:hidden absolute top-2 right-2">
           <DropdownMenu>
             <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
               <Button 
                 variant="ghost" 
                 size="icon"
-                className="h-8 w-8 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 flex-shrink-0"
+                className="h-7 w-7 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 flex-shrink-0"
               >
                 <MoreHorizontal className="h-4 w-4" />
               </Button>
