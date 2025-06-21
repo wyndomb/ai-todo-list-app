@@ -112,7 +112,7 @@ export function UpcomingView() {
       {/* Horizontal Date Navigation */}
       <Card className="card-modern">
         <CardContent className="p-3 md:p-4">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
             <Button
               variant="ghost"
               size="icon"
@@ -122,7 +122,7 @@ export function UpcomingView() {
               <ChevronLeft className="h-4 w-4" />
             </Button>
 
-            <div className="flex items-center gap-1 overflow-x-auto px-2">
+            <div className="flex items-center gap-1 flex-1 overflow-x-auto min-w-0 px-1">
               {weekDays.map((day) => {
                 const dateStr = format(day, 'yyyy-MM-dd');
                 const taskCount = dayTaskCounts[dateStr];
