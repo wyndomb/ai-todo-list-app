@@ -88,22 +88,6 @@ export function Dashboard() {
       {/* Main Task List */}
       <Card className="card-modern">
         <CardContent className="p-4 md:p-6">
-          <div className="flex items-center gap-3 mb-4 md:mb-6">
-            <div className="p-2 rounded-xl bg-gradient-to-r from-orange-500/10 to-yellow-500/10">
-              <CheckCircle2 className="h-5 w-5 md:h-6 md:w-6 text-orange-600 dark:text-orange-400" />
-            </div>
-            <div>
-              <h2 className="text-lg md:text-xl font-semibold text-gray-900 dark:text-gray-100">
-                Today's Tasks
-              </h2>
-              <p className="text-xs md:text-sm text-gray-600 dark:text-gray-400">
-                {overdueTasks.length > 0 
-                  ? `Including ${overdueTasks.length} overdue task${overdueTasks.length > 1 ? 's' : ''}`
-                  : "Focus on what matters today"}
-              </p>
-            </div>
-          </div>
-          
           <div className="w-full max-w-none">
             {displayTasks.length > 0 ? (
               <TaskList tasks={displayTasks} />
