@@ -25,6 +25,7 @@ interface TodoState {
   deleteTask: (id: string) => Promise<void>;
   toggleTaskCompletion: (id: string) => Promise<void>;
   clearTasks: () => Promise<void>;
+  reorderTasks: (taskIds: string[], startIndex: number, endIndex: number) => Promise<void>;
   
   // Category actions
   fetchCategories: () => Promise<void>;
@@ -59,6 +60,7 @@ const supabaseRowToTask = (row: any): Task => ({
   aiGenerated: row.ai_generated || undefined,
   aiSuggestions: row.ai_suggestions || undefined,
   parentId: row.parent_id || undefined,
+  sortOrder: row.sort_order || 0,
 });
 
 // Helper function to convert Task to Supabase insert/update format
@@ -75,6 +77,7 @@ const taskToSupabaseFormat = (task: Partial<Task>) => ({
   ai_generated: task.aiGenerated || null,
   ai_suggestions: task.aiSuggestions || null,
   parent_id: task.parentId || null,
+  sort_order: task.sortOrder || 0,
 });
 
 // Helper function to convert Supabase row to Category
@@ -138,6 +141,7 @@ export const useTodoStore = create<TodoState>()((set, get) => ({
       const { data, error } = await supabase
         .from('tasks')
         .select('*')
+        .order('sort_order', { ascending: true })
         .order('created_at', { ascending: false });
       
       if (error) {
@@ -187,10 +191,14 @@ export const useTodoStore = create<TodoState>()((set, get) => ({
   },
   
   addTask: async (task) => {
+    const currentTasks = get().tasks;
+    const maxSortOrder = Math.max(...currentTasks.map(t => t.sortOrder || 0), 0);
+    
     const newTask: Task = {
       ...task,
       id: uuidv4(),
       createdAt: new Date().toISOString(),
+      sortOrder: maxSortOrder + 1,
     };
 
     // If it's a subtask, inherit category from parent
@@ -203,7 +211,6 @@ export const useTodoStore = create<TodoState>()((set, get) => ({
     
     if (!supabase) {
       // Fallback to localStorage
-      const currentTasks = get().tasks;
       const updatedTasks = [newTask, ...currentTasks];
       set({ tasks: updatedTasks });
       try {
@@ -445,6 +452,58 @@ export const useTodoStore = create<TodoState>()((set, get) => ({
       });
     } catch (error) {
       console.error('Error clearing tasks:', error);
+    }
+  },
+
+  reorderTasks: async (taskIds, startIndex, endIndex) => {
+    const currentTasks = get().tasks;
+    
+    // Create a new array with the reordered tasks
+    const reorderedTasks = [...currentTasks];
+    const [movedTask] = reorderedTasks.splice(startIndex, 1);
+    reorderedTasks.splice(endIndex, 0, movedTask);
+    
+    // Update sort orders
+    const updatedTasks = reorderedTasks.map((task, index) => ({
+      ...task,
+      sortOrder: index,
+    }));
+    
+    // Update state immediately for responsive UI
+    set({ tasks: updatedTasks });
+    
+    if (!supabase) {
+      // Fallback to localStorage
+      try {
+        localStorage.setItem('todo-tasks', JSON.stringify(updatedTasks));
+      } catch (error) {
+        console.error('Error saving to localStorage:', error);
+      }
+      return;
+    }
+    
+    try {
+      // Batch update sort orders in database
+      const updates = updatedTasks.map(task => ({
+        id: task.id,
+        sort_order: task.sortOrder,
+      }));
+      
+      // Use upsert to update sort orders
+      const { error } = await supabase
+        .from('tasks')
+        .upsert(updates, { onConflict: 'id' });
+      
+      if (error) {
+        console.error('Error updating task order:', error);
+        // Revert state on error
+        set({ tasks: currentTasks });
+        return;
+      }
+    } catch (error) {
+      console.error('Error updating task order:', error);
+      // Revert state on error
+      set({ tasks: currentTasks });
     }
   },
   

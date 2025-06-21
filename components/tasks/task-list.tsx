@@ -2,13 +2,14 @@
 
 import { useState, useMemo } from 'react';
 import { Task } from '@/lib/types';
-import { TaskItem } from '@/components/tasks/task-item';
+import { SortableTaskList } from '@/components/tasks/sortable-task-list';
 import { Button } from '@/components/ui/button';
 import { useTodoStore } from '@/lib/store';
-import { isPast, isToday, addDays, isFuture, format } from 'date-fns';
+import { isPast, isToday, addDays, isFuture } from 'date-fns';
 import { AddTaskDialog } from '@/components/tasks/add-task-dialog';
-import { Plus, ChevronRight, ChevronDown } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { Plus, ArrowUpDown } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 
 interface TaskListProps {
   tasks: Task[];
@@ -16,7 +17,7 @@ interface TaskListProps {
 
 export function TaskList({ tasks }: TaskListProps) {
   const [showAddTask, setShowAddTask] = useState(false);
-  const [expandedParents, setExpandedParents] = useState<Set<string>>(new Set());
+  const [enableDragDrop, setEnableDragDrop] = useState(true);
   const { filterBy } = useTodoStore();
 
   // Apply filters from the store
@@ -47,25 +48,14 @@ export function TaskList({ tasks }: TaskListProps) {
     return true;
   });
 
-  // Organize tasks into hierarchy (parent tasks with their subtasks)
-  const organizedTasks = useMemo(() => {
-    const parentTasks = filteredTasks.filter(task => !task.parentId);
-    const subtasksByParent = filteredTasks
-      .filter(task => task.parentId)
-      .reduce((acc, task) => {
-        if (!acc[task.parentId!]) acc[task.parentId!] = [];
-        acc[task.parentId!].push(task);
-        return acc;
-      }, {} as Record<string, Task[]>);
-
-    return { parentTasks, subtasksByParent };
-  }, [filteredTasks]);
+  // Only show parent tasks (no subtasks in main list)
+  const parentTasks = filteredTasks.filter(task => !task.parentId);
 
   // Group parent tasks by status
   const today = new Date().toISOString().split('T')[0];
   
   // Overdue tasks - tasks that are not completed and have a due date in the past
-  const overdueTasks = organizedTasks.parentTasks.filter(task => 
+  const overdueTasks = parentTasks.filter(task => 
     !task.completed && 
     task.dueDate && 
     isPast(new Date(task.dueDate)) && 
@@ -73,14 +63,14 @@ export function TaskList({ tasks }: TaskListProps) {
   );
 
   // Focus tasks - today's tasks and urgent tasks, but exclude overdue tasks
-  const focusTasks = organizedTasks.parentTasks.filter(task => 
+  const focusTasks = parentTasks.filter(task => 
     !task.completed && 
     !overdueTasks.includes(task) && // Exclude tasks that are already in overdue
     ((task.dueDate && isToday(new Date(task.dueDate))) || 
      task.priority === 'urgent')
   );
 
-  const dueSoonTasks = organizedTasks.parentTasks.filter(task =>
+  const dueSoonTasks = parentTasks.filter(task =>
     !task.completed &&
     !overdueTasks.includes(task) && // Exclude overdue tasks
     !focusTasks.includes(task) && // Exclude focus tasks
@@ -90,7 +80,7 @@ export function TaskList({ tasks }: TaskListProps) {
     new Date(task.dueDate) <= addDays(new Date(), 7)
   );
 
-  const backlogTasks = organizedTasks.parentTasks.filter(task =>
+  const backlogTasks = parentTasks.filter(task =>
     !task.completed &&
     !overdueTasks.includes(task) && // Exclude overdue tasks
     !focusTasks.includes(task) && // Exclude focus tasks
@@ -98,94 +88,116 @@ export function TaskList({ tasks }: TaskListProps) {
     (!task.dueDate || new Date(task.dueDate) > addDays(new Date(), 7))
   );
 
-  const completedTasks = organizedTasks.parentTasks.filter(task => task.completed);
+  const completedTasks = parentTasks.filter(task => task.completed);
 
-  const toggleParentExpansion = (parentId: string) => {
-    const newExpanded = new Set(expandedParents);
-    if (newExpanded.has(parentId)) {
-      newExpanded.delete(parentId);
-    } else {
-      newExpanded.add(parentId);
-    }
-    setExpandedParents(newExpanded);
-  };
-
-  // Helper function to render a task with its subtasks
-  const renderTaskWithSubtasks = (task: Task) => {
-    const subtasks = organizedTasks.subtasksByParent[task.id] || [];
-    const hasSubtasks = subtasks.length > 0;
-    const isExpanded = expandedParents.has(task.id);
-
-    return (
-      <div key={task.id} className="space-y-2">
-        <div className="flex items-start gap-2">
-          {hasSubtasks && (
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 rounded-lg mt-1 flex-shrink-0"
-              onClick={() => toggleParentExpansion(task.id)}
-            >
-              {isExpanded ? (
-                <ChevronDown className="h-4 w-4" />
-              ) : (
-                <ChevronRight className="h-4 w-4" />
-              )}
-            </Button>
-          )}
-          <div className={cn("flex-1", !hasSubtasks && "ml-10")}>
-            <TaskItem task={task} />
-          </div>
-        </div>
-        
-        {/* Render subtasks if expanded */}
-        {hasSubtasks && isExpanded && (
-          <div className="ml-12 space-y-2 border-l-2 border-gray-200 dark:border-gray-700 pl-4">
-            {subtasks.map(subtask => (
-              <div key={subtask.id} className="relative">
-                <div className="absolute -left-4 top-4 w-2 h-0.5 bg-gray-200 dark:bg-gray-700"></div>
-                <TaskItem task={subtask} />
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-    );
-  };
-
-  // Helper function to render a task group
-  const renderTaskGroup = (tasks: Task[], title: string, emoji: string) => {
-    if (tasks.length === 0) return null;
-    
-    return (
-      <div className="space-y-3">
-        <div className="flex items-center gap-2 px-1">
-          <span className="text-lg">{emoji}</span>
-          <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">
-            {title}
-          </h3>
-          <span className="text-xs font-normal text-gray-500 dark:text-gray-400">
-            ({tasks.length})
-          </span>
-        </div>
-        <div className="space-y-2">
-          {tasks.map(task => renderTaskWithSubtasks(task))}
-        </div>
-      </div>
-    );
+  // Sort tasks by sortOrder for drag and drop
+  const sortTasksByOrder = (taskList: Task[]) => {
+    return [...taskList].sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
   };
 
   return (
     <div className="w-full max-w-none">
+      {/* Drag and Drop Toggle */}
+      <div className="flex items-center justify-between mb-4 p-3 bg-gray-50 dark:bg-gray-800 rounded-xl">
+        <div className="flex items-center space-x-2">
+          <Switch
+            id="drag-drop-mode"
+            checked={enableDragDrop}
+            onCheckedChange={setEnableDragDrop}
+          />
+          <Label htmlFor="drag-drop-mode" className="flex items-center gap-2 text-sm font-medium">
+            <ArrowUpDown className="h-4 w-4" />
+            Enable Drag & Drop Reordering
+          </Label>
+        </div>
+        {enableDragDrop && (
+          <p className="text-xs text-gray-500 dark:text-gray-400">
+            Drag tasks by the grip handle to reorder
+          </p>
+        )}
+      </div>
+
       <div className="space-y-6">
         {/* Overdue tasks section - displayed first with high priority */}
-        {renderTaskGroup(overdueTasks, "Overdue", "🚨")}
-        {renderTaskGroup(focusTasks, "Focus for Today", "⚡️")}
-        {renderTaskGroup(dueSoonTasks, "Due Soon", "⏳")}
-        {renderTaskGroup(backlogTasks, "Backlog", "🧠")}
+        {overdueTasks.length > 0 && (
+          enableDragDrop ? (
+            <SortableTaskList 
+              tasks={sortTasksByOrder(overdueTasks)} 
+              title="Overdue" 
+              emoji="🚨" 
+            />
+          ) : (
+            <SortableTaskList 
+              tasks={overdueTasks} 
+              title="Overdue" 
+              emoji="🚨" 
+            />
+          )
+        )}
+
+        {focusTasks.length > 0 && (
+          enableDragDrop ? (
+            <SortableTaskList 
+              tasks={sortTasksByOrder(focusTasks)} 
+              title="Focus for Today" 
+              emoji="⚡️" 
+            />
+          ) : (
+            <SortableTaskList 
+              tasks={focusTasks} 
+              title="Focus for Today" 
+              emoji="⚡️" 
+            />
+          )
+        )}
+
+        {dueSoonTasks.length > 0 && (
+          enableDragDrop ? (
+            <SortableTaskList 
+              tasks={sortTasksByOrder(dueSoonTasks)} 
+              title="Due Soon" 
+              emoji="⏳" 
+            />
+          ) : (
+            <SortableTaskList 
+              tasks={dueSoonTasks} 
+              title="Due Soon" 
+              emoji="⏳" 
+            />
+          )
+        )}
+
+        {backlogTasks.length > 0 && (
+          enableDragDrop ? (
+            <SortableTaskList 
+              tasks={sortTasksByOrder(backlogTasks)} 
+              title="Backlog" 
+              emoji="🧠" 
+            />
+          ) : (
+            <SortableTaskList 
+              tasks={backlogTasks} 
+              title="Backlog" 
+              emoji="🧠" 
+            />
+          )
+        )}
+
         {completedTasks.length > 0 && (
           <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
-            {renderTaskGroup(completedTasks, "Completed", "✅")}
+            {enableDragDrop ? (
+              <SortableTaskList 
+                tasks={sortTasksByOrder(completedTasks)} 
+                title="Completed" 
+                emoji="✅" 
+              />
+            ) : (
+              <SortableTaskList 
+                tasks={completedTasks} 
+                title="Completed" 
+                emoji="✅" 
+              />
+            )}
           </div>
         )}
         

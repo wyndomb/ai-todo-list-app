@@ -12,6 +12,8 @@ export interface Task {
   aiSuggestions?: string[];
   // Fields for subtasks
   parentId?: string;
+  // Field for drag and drop ordering
+  sortOrder?: number;
 }
 
 export interface Category {
