@@ -7,9 +7,7 @@ import { Button } from '@/components/ui/button';
 import { useTodoStore } from '@/lib/store';
 import { isPast, isToday, addDays, isFuture } from 'date-fns';
 import { AddTaskDialog } from '@/components/tasks/add-task-dialog';
-import { Plus, ArrowUpDown } from 'lucide-react';
-import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
+import { Plus } from 'lucide-react';
 
 interface TaskListProps {
   tasks: Task[];
@@ -17,7 +15,6 @@ interface TaskListProps {
 
 export function TaskList({ tasks }: TaskListProps) {
   const [showAddTask, setShowAddTask] = useState(false);
-  const [enableDragDrop, setEnableDragDrop] = useState(true);
   const { filterBy } = useTodoStore();
 
   // Apply filters from the store
@@ -97,107 +94,47 @@ export function TaskList({ tasks }: TaskListProps) {
 
   return (
     <div className="w-full max-w-none">
-      {/* Drag and Drop Toggle */}
-      <div className="flex items-center justify-between mb-4 p-3 bg-gray-50 dark:bg-gray-800 rounded-xl">
-        <div className="flex items-center space-x-2">
-          <Switch
-            id="drag-drop-mode"
-            checked={enableDragDrop}
-            onCheckedChange={setEnableDragDrop}
-          />
-          <Label htmlFor="drag-drop-mode" className="flex items-center gap-2 text-sm font-medium">
-            <ArrowUpDown className="h-4 w-4" />
-            Enable Drag & Drop Reordering
-          </Label>
-        </div>
-        {enableDragDrop && (
-          <p className="text-xs text-gray-500 dark:text-gray-400">
-            Drag tasks by the grip handle to reorder
-          </p>
-        )}
-      </div>
-
       <div className="space-y-6">
         {/* Overdue tasks section - displayed first with high priority */}
         {overdueTasks.length > 0 && (
-          enableDragDrop ? (
-            <SortableTaskList 
-              tasks={sortTasksByOrder(overdueTasks)} 
-              title="Overdue" 
-              emoji="🚨" 
-            />
-          ) : (
-            <SortableTaskList 
-              tasks={overdueTasks} 
-              title="Overdue" 
-              emoji="🚨" 
-            />
-          )
+          <SortableTaskList 
+            tasks={sortTasksByOrder(overdueTasks)} 
+            title="Overdue" 
+            emoji="🚨" 
+          />
         )}
 
         {focusTasks.length > 0 && (
-          enableDragDrop ? (
-            <SortableTaskList 
-              tasks={sortTasksByOrder(focusTasks)} 
-              title="Focus for Today" 
-              emoji="⚡️" 
-            />
-          ) : (
-            <SortableTaskList 
-              tasks={focusTasks} 
-              title="Focus for Today" 
-              emoji="⚡️" 
-            />
-          )
+          <SortableTaskList 
+            tasks={sortTasksByOrder(focusTasks)} 
+            title="Focus for Today" 
+            emoji="⚡️" 
+          />
         )}
 
         {dueSoonTasks.length > 0 && (
-          enableDragDrop ? (
-            <SortableTaskList 
-              tasks={sortTasksByOrder(dueSoonTasks)} 
-              title="Due Soon" 
-              emoji="⏳" 
-            />
-          ) : (
-            <SortableTaskList 
-              tasks={dueSoonTasks} 
-              title="Due Soon" 
-              emoji="⏳" 
-            />
-          )
+          <SortableTaskList 
+            tasks={sortTasksByOrder(dueSoonTasks)} 
+            title="Due Soon" 
+            emoji="⏳" 
+          />
         )}
 
         {backlogTasks.length > 0 && (
-          enableDragDrop ? (
-            <SortableTaskList 
-              tasks={sortTasksByOrder(backlogTasks)} 
-              title="Backlog" 
-              emoji="🧠" 
-            />
-          ) : (
-            <SortableTaskList 
-              tasks={backlogTasks} 
-              title="Backlog" 
-              emoji="🧠" 
-            />
-          )
+          <SortableTaskList 
+            tasks={sortTasksByOrder(backlogTasks)} 
+            title="Backlog" 
+            emoji="🧠" 
+          />
         )}
 
         {completedTasks.length > 0 && (
           <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
-            {enableDragDrop ? (
-              <SortableTaskList 
-                tasks={sortTasksByOrder(completedTasks)} 
-                title="Completed" 
-                emoji="✅" 
-              />
-            ) : (
-              <SortableTaskList 
-                tasks={completedTasks} 
-                title="Completed" 
-                emoji="✅" 
-              />
-            )}
+            <SortableTaskList 
+              tasks={sortTasksByOrder(completedTasks)} 
+              title="Completed" 
+              emoji="✅" 
+            />
           </div>
         )}
         
