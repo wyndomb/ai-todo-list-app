@@ -23,9 +23,11 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Plus } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 const categorySchema = z.object({
   name: z.string().min(1, "Category name is required").max(50, "Name must be 50 characters or less"),
+  color: z.string().regex(/^#[0-9A-F]{6}$/i, "Please select a color"),
 });
 
 type CategoryFormValues = z.infer<typeof categorySchema>;
@@ -35,6 +37,22 @@ interface AddCategoryDialogProps {
   onOpenChange: (open: boolean) => void;
 }
 
+// Predefined color palette
+const colorPalette = [
+  '#818cf8', // Indigo
+  '#22d3ee', // Cyan
+  '#22c55e', // Green
+  '#eab308', // Yellow
+  '#ec4899', // Pink
+  '#f97316', // Orange
+  '#8b5cf6', // Violet
+  '#06b6d4', // Sky
+  '#84cc16', // Lime
+  '#f59e0b', // Amber
+  '#ef4444', // Red
+  '#6366f1', // Indigo
+];
+
 export function AddCategoryDialog({ open, onOpenChange }: AddCategoryDialogProps) {
   const { categories, addCategory } = useTodoStore();
   const { toast } = useToast();
@@ -43,6 +61,7 @@ export function AddCategoryDialog({ open, onOpenChange }: AddCategoryDialogProps
     resolver: zodResolver(categorySchema),
     defaultValues: {
       name: '',
+      color: colorPalette[0], // Default to first color
     },
   });
 
@@ -59,7 +78,7 @@ export function AddCategoryDialog({ open, onOpenChange }: AddCategoryDialogProps
 
     await addCategory({
       name: data.name,
-      color: '#6b7280', // Default gray color
+      color: data.color,
       icon: 'folder', // Default folder icon
     });
     
@@ -70,6 +89,7 @@ export function AddCategoryDialog({ open, onOpenChange }: AddCategoryDialogProps
     
     form.reset({
       name: '',
+      color: colorPalette[0],
     });
     onOpenChange(false);
   };
@@ -94,6 +114,36 @@ export function AddCategoryDialog({ open, onOpenChange }: AddCategoryDialogProps
                   <FormLabel>Category Name</FormLabel>
                   <FormControl>
                     <Input placeholder="e.g., Travel, Hobbies" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="color"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Color</FormLabel>
+                  <FormControl>
+                    <div className="grid grid-cols-6 gap-2">
+                      {colorPalette.map(color => (
+                        <button
+                          key={color}
+                          type="button"
+                          onClick={() => field.onChange(color)}
+                          className={cn(
+                            "w-10 h-10 rounded-lg border-2 transition-all duration-200 hover:scale-110",
+                            field.value === color 
+                              ? "border-gray-900 dark:border-gray-100 shadow-lg ring-2 ring-primary/20" 
+                              : "border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500"
+                          )}
+                          style={{ backgroundColor: color }}
+                          title={color}
+                        />
+                      ))}
+                    </div>
                   </FormControl>
                   <FormMessage />
                 </FormItem>
