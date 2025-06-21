@@ -94,7 +94,7 @@ export function TaskItem({ task }: TaskItemProps) {
     <>
       <div 
         className={cn(
-          "relative flex items-start gap-2 md:gap-4 p-2 md:p-4 rounded-2xl border transition-all duration-200 cursor-pointer hover:shadow-md",
+          "relative flex items-start gap-1.5 md:gap-4 py-1.5 px-2 md:p-4 rounded-2xl border transition-all duration-200 cursor-pointer hover:shadow-md",
           task.completed 
             ? "bg-gray-50/50 dark:bg-gray-800/50 border-gray-200/50 dark:border-gray-700/50" 
             : "bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700",
@@ -122,7 +122,7 @@ export function TaskItem({ task }: TaskItemProps) {
         <div className="flex-1 min-w-0">
           <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-1 md:gap-2">
             <div className="flex-1 min-w-0">
-              <div className="flex items-start gap-2 mb-1">
+              <div className="flex items-start gap-1 mb-0.5">
                 <h3 
                   className={cn(
                     "text-sm md:text-base font-medium leading-tight transition-all duration-200",
@@ -143,13 +143,13 @@ export function TaskItem({ task }: TaskItemProps) {
               </div>
               
               {task.description && (
-                <p className="text-xs md:text-sm text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">
+                <p className="text-xs md:text-sm text-gray-500 dark:text-gray-400 mt-0.5 line-clamp-2">
                   {task.description}
                 </p>
               )}
 
               {/* Mobile: Show badges below description */}
-              <div className="flex flex-wrap items-center gap-1 md:gap-2 mt-1 md:mt-2 sm:hidden">
+              <div className="flex flex-wrap items-center gap-0.5 md:gap-2 mt-0.5 md:mt-2 sm:hidden">
                 {task.category && (
                   <Badge 
                     variant="secondary" 
@@ -283,15 +283,15 @@ export function TaskItem({ task }: TaskItemProps) {
         </div>
 
         {/* Mobile: Show menu button at bottom right */}
-        <div className="sm:hidden absolute top-2 right-2">
+        <div className="sm:hidden absolute top-1.5 right-2">
           <DropdownMenu>
             <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
               <Button 
                 variant="ghost" 
                 size="icon"
-                className="h-7 w-7 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 flex-shrink-0"
+                className="h-6 w-6 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 flex-shrink-0"
               >
-                <MoreHorizontal className="h-4 w-4" />
+                <MoreHorizontal className="h-3 w-3" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-40 rounded-xl border-gray-200/50 dark:border-gray-700/50 shadow-lg">
