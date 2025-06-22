@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useState } from "react";
 import {
   DndContext,
   closestCenter,
@@ -11,21 +11,21 @@ import {
   DragEndEvent,
   DragStartEvent,
   DragOverlay,
-} from '@dnd-kit/core';
+} from "@dnd-kit/core";
 import {
   arrayMove,
   SortableContext,
   sortableKeyboardCoordinates,
   verticalListSortingStrategy,
-} from '@dnd-kit/sortable';
+} from "@dnd-kit/sortable";
 import {
   restrictToVerticalAxis,
   restrictToWindowEdges,
-} from '@dnd-kit/modifiers';
-import { Task } from '@/lib/types';
-import { useTodoStore } from '@/lib/store';
-import { DraggableTaskItem } from '@/components/tasks/draggable-task-item';
-import { TaskItem } from '@/components/tasks/task-item';
+} from "@dnd-kit/modifiers";
+import { Task } from "@/lib/types";
+import { useTodoStore } from "@/lib/store";
+import { DraggableTaskItem } from "@/components/tasks/draggable-task-item";
+import { TaskItem } from "@/components/tasks/task-item";
 
 interface SortableTaskListProps {
   tasks: Task[];
@@ -33,14 +33,29 @@ interface SortableTaskListProps {
   emoji?: string;
 }
 
-export function SortableTaskList({ tasks, title, emoji }: SortableTaskListProps) {
+// Custom modifier to improve cursor alignment
+const snapCenterToCursor = ({ transform, ...args }: any) => {
+  return {
+    ...transform,
+    x: transform.x,
+    y: transform.y,
+    scaleX: 1,
+    scaleY: 1,
+  };
+};
+
+export function SortableTaskList({
+  tasks,
+  title,
+  emoji,
+}: SortableTaskListProps) {
   const { reorderTasks } = useTodoStore();
   const [activeTask, setActiveTask] = useState<Task | null>(null);
-  
+
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        distance: 8,
+        distance: 3,
       },
     }),
     useSensor(KeyboardSensor, {
@@ -50,7 +65,7 @@ export function SortableTaskList({ tasks, title, emoji }: SortableTaskListProps)
 
   const handleDragStart = (event: DragStartEvent) => {
     const { active } = event;
-    const task = tasks.find(t => t.id === active.id);
+    const task = tasks.find((t) => t.id === active.id);
     setActiveTask(task || null);
   };
 
@@ -62,11 +77,11 @@ export function SortableTaskList({ tasks, title, emoji }: SortableTaskListProps)
       return;
     }
 
-    const oldIndex = tasks.findIndex(task => task.id === active.id);
-    const newIndex = tasks.findIndex(task => task.id === over.id);
+    const oldIndex = tasks.findIndex((task) => task.id === active.id);
+    const newIndex = tasks.findIndex((task) => task.id === over.id);
 
     if (oldIndex !== -1 && newIndex !== -1) {
-      const taskIds = tasks.map(task => task.id);
+      const taskIds = tasks.map((task) => task.id);
       reorderTasks(taskIds, oldIndex, newIndex);
     }
   };
@@ -94,22 +109,37 @@ export function SortableTaskList({ tasks, title, emoji }: SortableTaskListProps)
         collisionDetection={closestCenter}
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
-        modifiers={[restrictToVerticalAxis, restrictToWindowEdges]}
+        modifiers={[
+          restrictToVerticalAxis,
+          restrictToWindowEdges,
+          snapCenterToCursor,
+        ]}
       >
-        <SortableContext items={tasks.map(task => task.id)} strategy={verticalListSortingStrategy}>
+        <SortableContext
+          items={tasks.map((task) => task.id)}
+          strategy={verticalListSortingStrategy}
+        >
           <div className="space-y-2">
             {tasks.map((task) => (
-              <DraggableTaskItem
-                key={task.id}
-                task={task}
-              />
+              <DraggableTaskItem key={task.id} task={task} />
             ))}
           </div>
         </SortableContext>
 
-        <DragOverlay>
+        <DragOverlay
+          adjustScale={false}
+          style={{
+            transformOrigin: "0 0",
+          }}
+        >
           {activeTask ? (
-            <div className="shadow-2xl bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700">
+            <div
+              className="shadow-2xl bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700 rotate-2 scale-105 opacity-95"
+              style={{
+                cursor: "grabbing",
+                transformOrigin: "0 0",
+              }}
+            >
               <TaskItem task={activeTask} />
             </div>
           ) : null}
