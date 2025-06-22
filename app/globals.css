@@ -2,7 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap");
 
 :root {
   --foreground-rgb: 0, 0, 0;
@@ -46,7 +46,7 @@
     --chart-5: 27 87% 67%;
     --radius: 1rem;
   }
-  
+
   .dark {
     --background: 222 84% 4.9%;
     --foreground: 210 40% 98%;
@@ -89,47 +89,47 @@
   .card-modern {
     @apply bg-white dark:bg-gray-900 rounded-2xl shadow-md border border-gray-100 dark:border-gray-800 transition-all duration-200 hover:shadow-lg hover:scale-[1.02];
   }
-  
+
   .btn-primary {
     @apply bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl px-4 py-2 font-medium transition-all duration-200 hover:scale-105 shadow-sm hover:shadow-md;
   }
-  
+
   .btn-secondary {
     @apply border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-xl px-4 py-2 font-medium transition-all duration-200 hover:scale-105;
   }
-  
+
   .btn-ghost {
     @apply text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl px-4 py-2 font-medium transition-all duration-200 hover:scale-105;
   }
-  
+
   .input-modern {
     @apply bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all duration-200;
   }
-  
+
   .text-heading {
     @apply text-2xl font-bold text-gray-900 dark:text-gray-100;
   }
-  
+
   .text-subheading {
     @apply text-lg font-semibold text-gray-800 dark:text-gray-200;
   }
-  
+
   .text-muted {
     @apply text-sm text-gray-500 dark:text-gray-400;
   }
-  
+
   .animate-task-complete {
     animation: task-complete 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
   }
-  
+
   .animate-emoji-burst {
     animation: emoji-burst 0.8s ease-out;
   }
-  
+
   .animate-slide-fade {
     animation: slide-fade 0.4s ease-out;
   }
-  
+
   .animate-bounce-in {
     animation: bounce-in 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
   }
@@ -151,23 +151,33 @@
 }
 
 @keyframes task-complete {
-  0% { transform: scale(1) rotate(0deg); }
-  25% { transform: scale(1.1) rotate(5deg); }
-  50% { transform: scale(1.05) rotate(-5deg); }
-  75% { transform: scale(1.02) rotate(2deg); }
-  100% { transform: scale(1) rotate(0deg); }
+  0% {
+    transform: scale(1) rotate(0deg);
+  }
+  25% {
+    transform: scale(1.1) rotate(5deg);
+  }
+  50% {
+    transform: scale(1.05) rotate(-5deg);
+  }
+  75% {
+    transform: scale(1.02) rotate(2deg);
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+  }
 }
 
 @keyframes emoji-burst {
-  0% { 
+  0% {
     transform: scale(0) rotate(0deg);
     opacity: 0;
   }
-  50% { 
+  50% {
     transform: scale(1.2) rotate(180deg);
     opacity: 1;
   }
-  100% { 
+  100% {
     transform: scale(1) rotate(360deg);
     opacity: 0;
   }
@@ -218,13 +228,23 @@
 }
 
 @keyframes fade-in {
-  0% { opacity: 0; }
-  100% { opacity: 1; }
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
 }
 
 @keyframes slide-up {
-  0% { transform: translateY(10px); opacity: 0; }
-  100% { transform: translateY(0); opacity: 1; }
+  0% {
+    transform: translateY(10px);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
 }
 
 .animate-accordion-down {
@@ -240,7 +260,7 @@
 }
 
 .animate-slide-up {
-  animation: slide-up 0.3s ease-in-out;
+  animation: slide-up 0.4s ease-out;
 }
 
 /* Mobile-specific improvements */
@@ -249,21 +269,26 @@
     padding-left: 1rem;
     padding-right: 1rem;
   }
-  
+
   /* Ensure touch targets are at least 44px */
-  button, .btn, [role="button"] {
+  button,
+  .btn,
+  [role="button"] {
     min-height: 44px;
     min-width: 44px;
   }
-  
+
   /* Improve form inputs on mobile */
-  input, textarea, select {
+  input,
+  textarea,
+  select {
     font-size: 16px; /* Prevents zoom on iOS */
   }
 }
 
 /* Prevent horizontal scroll on mobile */
-html, body {
+html,
+body {
   overflow-x: hidden;
 }
 
@@ -272,8 +297,21 @@ html, body {
   .safe-area-top {
     padding-top: max(1rem, env(safe-area-inset-top));
   }
-  
+
   .safe-area-bottom {
     padding-bottom: max(1rem, env(safe-area-inset-bottom));
   }
+}
+
+/* Drag and Drop Improvements */
+[data-dnd-kit-dragging="true"] {
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+}
+
+.dragging * {
+  pointer-events: none !important;
+  user-select: none !important;
 }

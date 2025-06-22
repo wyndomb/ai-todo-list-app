@@ -1,30 +1,29 @@
 "use client";
 
-import { useTodoStore } from '@/lib/store';
-import { TaskList } from '@/components/tasks/task-list';
-import { Card, CardContent } from '@/components/ui/card';
-import { Target, CheckCircle2, Clock } from 'lucide-react';
+import { useTodoStore } from "@/lib/store";
+import { TaskList } from "@/components/tasks/task-list";
+import { Card, CardContent } from "@/components/ui/card";
+import { Target, CheckCircle2, Clock } from "lucide-react";
 
 export function Dashboard() {
   const { tasks } = useTodoStore();
-  
+
   // Filter tasks for today and overdue
-  const today = new Date().toISOString().split('T')[0];
-  const todayTasks = tasks.filter(task => 
-    task.dueDate === today
+  const today = new Date().toISOString().split("T")[0];
+  const todayTasks = tasks.filter((task) => task.dueDate === today);
+  const overdueTasks = tasks.filter(
+    (task) => task.dueDate && task.dueDate < today && !task.completed
   );
-  const overdueTasks = tasks.filter(task => 
-    task.dueDate && task.dueDate < today && !task.completed
-  );
-  
+
   // Combine today and overdue tasks for display
   const displayTasks = [...overdueTasks, ...todayTasks];
-  
-  const todayCompletedTasks = todayTasks.filter(t => t.completed).length;
-  const todayActiveTasks = todayTasks.filter(t => !t.completed).length;
-  const todayCompletionRate = todayTasks.length > 0 
-    ? Math.round((todayCompletedTasks / todayTasks.length) * 100) 
-    : 0;
+
+  const todayCompletedTasks = todayTasks.filter((t) => t.completed).length;
+  const todayActiveTasks = todayTasks.filter((t) => !t.completed).length;
+  const todayCompletionRate =
+    todayTasks.length > 0
+      ? Math.round((todayCompletedTasks / todayTasks.length) * 100)
+      : 0;
 
   return (
     <div className="space-y-4 md:space-y-6 animate-fade-in max-w-none pb-20 lg:pb-0">
@@ -34,8 +33,8 @@ export function Dashboard() {
           Today's Focus 🌅
         </h1>
         <p className="text-sm md:text-base text-gray-600 dark:text-gray-400">
-          {todayTasks.length === 0 
-            ? "No tasks scheduled for today. Time to plan ahead!" 
+          {todayTasks.length === 0
+            ? "No tasks scheduled for today. Time to plan ahead!"
             : `${todayActiveTasks} tasks to complete today`}
         </p>
       </div>
@@ -100,7 +99,8 @@ export function Dashboard() {
                   No tasks for today
                 </h3>
                 <p className="text-sm md:text-base text-gray-600 dark:text-gray-400 mb-4">
-                  You're all caught up! Time to plan for tomorrow or take a well-deserved break.
+                  You're all caught up! Time to plan for tomorrow or take a
+                  well-deserved break.
                 </p>
               </div>
             )}

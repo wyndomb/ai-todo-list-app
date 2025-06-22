@@ -1,29 +1,32 @@
 "use client";
 
-import { useState, useMemo } from 'react';
-import { format, addDays, startOfWeek, isSameDay, isToday } from 'date-fns';
-import { useTodoStore } from '@/lib/store';
-import { TaskList } from '@/components/tasks/task-list';
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Calendar } from '@/components/ui/calendar';
-import { 
+import React, { useState, useMemo } from "react";
+import { format, addDays, startOfWeek, isSameDay, isToday } from "date-fns";
+import { useTodoStore } from "@/lib/store";
+import { TaskList } from "@/components/tasks/task-list";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
+import {
   Popover,
   PopoverContent,
-  PopoverTrigger
-} from '@/components/ui/popover';
-import { 
-  ChevronLeft, 
-  ChevronRight, 
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  ChevronLeft,
+  ChevronRight,
   Calendar as CalendarIcon,
-  ListTodo 
-} from 'lucide-react';
-import { cn } from '@/lib/utils';
+  ListTodo,
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+import type { Task } from "@/lib/types";
 
 export function UpcomingView() {
   const { tasks } = useTodoStore();
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-  const [weekStartDate, setWeekStartDate] = useState<Date>(startOfWeek(new Date(), { weekStartsOn: 1 }));
+  const [weekStartDate, setWeekStartDate] = useState<Date>(
+    startOfWeek(new Date(), { weekStartsOn: 1 })
+  );
 
   // Generate 7 days starting from weekStartDate
   const weekDays = useMemo(() => {
@@ -32,21 +35,23 @@ export function UpcomingView() {
 
   // Get tasks for the selected date
   const selectedDateTasks = useMemo(() => {
-    const dateStr = format(selectedDate, 'yyyy-MM-dd');
-    return tasks.filter(task => task.dueDate === dateStr);
+    const dateStr = format(selectedDate, "yyyy-MM-dd");
+    return tasks.filter((task: Task) => task.dueDate === dateStr);
   }, [tasks, selectedDate]);
 
   // Get task counts for each day in the week
   const dayTaskCounts = useMemo(() => {
-    return weekDays.reduce((acc, day) => {
-      const dateStr = format(day, 'yyyy-MM-dd');
-      acc[dateStr] = tasks.filter(task => task.dueDate === dateStr && !task.completed).length;
+    return weekDays.reduce((acc: Record<string, number>, day: Date) => {
+      const dateStr = format(day, "yyyy-MM-dd");
+      acc[dateStr] = tasks.filter(
+        (task: Task) => task.dueDate === dateStr && !task.completed
+      ).length;
       return acc;
     }, {} as Record<string, number>);
   }, [weekDays, tasks]);
 
-  const navigateWeek = (direction: 'prev' | 'next') => {
-    const newWeekStart = addDays(weekStartDate, direction === 'next' ? 7 : -7);
+  const navigateWeek = (direction: "prev" | "next") => {
+    const newWeekStart = addDays(weekStartDate, direction === "next" ? 7 : -7);
     setWeekStartDate(newWeekStart);
   };
 
@@ -62,26 +67,28 @@ export function UpcomingView() {
   };
 
   return (
-    <div className="space-y-4 md:space-y-6 animate-fade-in pb-20 lg:pb-0">
+    <div className="space-y-4 md:space-y-6 animate-fade-in max-w-none pb-20 lg:pb-0">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-gray-100">
+      <div className="flex flex-col space-y-3 sm:space-y-0 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex-1">
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 dark:text-gray-100">
             Upcoming
           </h1>
-          <p className="text-sm md:text-base text-gray-600 dark:text-gray-400 mt-1">
+          <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400 mt-1">
             Plan and manage your future tasks
           </p>
         </div>
 
-        <div className="flex items-center gap-2 md:gap-3 w-full sm:w-auto">
+        <div className="flex items-center gap-2 sm:gap-3">
           {/* Month/Year Picker */}
           <Popover>
             <PopoverTrigger asChild>
-              <Button variant="outline" className="gap-2 flex-1 sm:flex-none text-sm">
+              <Button
+                variant="outline"
+                className="gap-2 flex-1 sm:flex-none text-sm sm:text-base px-3 py-2 h-10"
+              >
                 <CalendarIcon className="h-4 w-4" />
-                <span className="hidden sm:inline">{format(selectedDate, 'MMMM yyyy')}</span>
-                <span className="sm:hidden">{format(selectedDate, 'MMM yyyy')}</span>
+                <span>{format(selectedDate, "MMM yyyy")}</span>
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0" align="end">
@@ -92,89 +99,85 @@ export function UpcomingView() {
                 className="rounded-md border-0"
                 classNames={{
                   day_today: "bg-primary text-primary-foreground font-bold",
-                  day_selected: "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground",
+                  day_selected:
+                    "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground",
                 }}
               />
             </PopoverContent>
           </Popover>
 
-          {/* Today Button */}
-          <Button 
-            variant="outline" 
-            onClick={goToToday}
-            className="gap-2 text-sm"
-          >
-            Today
-          </Button>
-        </div>
-      </div>
-
-      {/* Horizontal Date Navigation */}
-      <Card className="card-modern">
-        <CardContent className="p-3 md:p-4">
-          <div className="flex items-center gap-2">
+          {/* Week Navigation Controls */}
+          <div className="flex items-center gap-1">
             <Button
-              variant="ghost"
+              variant="outline"
               size="icon"
-              onClick={() => navigateWeek('prev')}
-              className="rounded-full h-8 w-8 md:h-10 md:w-10 flex-shrink-0"
+              onClick={() => navigateWeek("prev")}
+              className="h-10 w-10"
             >
               <ChevronLeft className="h-4 w-4" />
             </Button>
 
-            <div className="flex items-center gap-1 flex-1 overflow-x-auto min-w-0 px-1">
-              {weekDays.map((day) => {
-                const dateStr = format(day, 'yyyy-MM-dd');
-                const taskCount = dayTaskCounts[dateStr];
-                const isSelected = isSameDay(day, selectedDate);
-                const isToday_ = isToday(day);
-
-                return (
-                  <button
-                    key={dateStr}
-                    onClick={() => setSelectedDate(day)}
-                    className={cn(
-                      "flex flex-col items-center p-2 md:p-3 rounded-xl transition-all duration-200 min-w-[48px] sm:min-w-[60px] md:min-w-[80px] flex-shrink-0",
-                      isSelected
-                        ? "bg-primary text-primary-foreground shadow-md"
-                        : isToday_
-                        ? "bg-red-50 text-red-600 border border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800"
-                        : "hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300"
-                    )}
-                  >
-                    <span className="text-xs font-medium mb-1">
-                      {format(day, 'EEE')}
-                    </span>
-                    <span className={cn(
-                      "text-base md:text-lg font-semibold",
-                      isToday_ && !isSelected && "text-red-600 dark:text-red-400"
-                    )}>
-                      {format(day, 'd')}
-                    </span>
-                    {/* Always render the task count span, but make it invisible when count is 0 */}
-                    <span className={cn(
-                      "text-xs px-1.5 py-0.5 rounded-full font-medium mt-1 h-5", // Fixed height
-                      taskCount > 0 
-                        ? isSelected
-                          ? "bg-white/20 text-white"
-                          : "bg-primary/10 text-primary"
-                        : "invisible" // Invisible but still takes up space
-                    )}>
-                      {taskCount > 0 ? taskCount : "0"}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
+            <Button
+              variant="outline"
+              onClick={goToToday}
+              className="text-sm sm:text-base px-3 py-2 h-10 whitespace-nowrap"
+            >
+              Today
+            </Button>
 
             <Button
-              variant="ghost"
+              variant="outline"
               size="icon"
-              onClick={() => navigateWeek('next')}
-              className="rounded-full h-8 w-8 md:h-10 md:w-10 flex-shrink-0"
+              onClick={() => navigateWeek("next")}
+              className="h-10 w-10"
             >
               <ChevronRight className="h-4 w-4" />
             </Button>
+          </div>
+        </div>
+      </div>
+
+      {/* Week Date Navigation */}
+      <Card className="card-modern">
+        <CardContent className="p-4">
+          <div className="grid grid-cols-7 gap-1">
+            {weekDays.map((day) => {
+              const dateStr = format(day, "yyyy-MM-dd");
+              const taskCount = dayTaskCounts[dateStr];
+              const isSelected = isSameDay(day, selectedDate);
+              const isToday_ = isToday(day);
+
+              return (
+                <button
+                  key={dateStr}
+                  onClick={() => setSelectedDate(day)}
+                  className={cn(
+                    "flex flex-col items-center justify-center p-2 rounded-lg transition-all duration-200 min-h-[60px]",
+                    isSelected
+                      ? "bg-blue-600 text-white"
+                      : isToday_
+                      ? "bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400"
+                      : "hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300"
+                  )}
+                >
+                  <span className="text-xs font-medium mb-1 uppercase tracking-wide opacity-70">
+                    {format(day, "EEE")}
+                  </span>
+                  <span className="text-lg font-semibold mb-1">
+                    {format(day, "d")}
+                  </span>
+                  {/* Task indicator dot */}
+                  {taskCount > 0 && (
+                    <div
+                      className={cn(
+                        "w-1.5 h-1.5 rounded-full",
+                        isSelected ? "bg-white" : "bg-blue-500"
+                      )}
+                    />
+                  )}
+                </button>
+              );
+            })}
           </div>
         </CardContent>
       </Card>
@@ -182,23 +185,24 @@ export function UpcomingView() {
       {/* Tasks for Selected Date */}
       <Card className="card-modern">
         <CardContent className="p-4 md:p-6">
-          <div className="flex items-center gap-3 mb-4 md:mb-6">
-            <div className="p-2 rounded-xl bg-gradient-to-r from-blue-500/10 to-purple-500/10">
-              <ListTodo className="h-5 w-5 md:h-6 md:w-6 text-blue-600 dark:text-blue-400" />
+          <div className="flex items-start gap-3 sm:gap-4 mb-4 md:mb-6">
+            <div className="p-2 sm:p-3 rounded-xl bg-gradient-to-r from-blue-500/10 to-purple-500/10 flex-shrink-0">
+              <ListTodo className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600 dark:text-blue-400" />
             </div>
-            <div>
-              <h2 className="text-lg md:text-xl font-semibold text-gray-900 dark:text-gray-100">
-                <span className="hidden sm:inline">Tasks for {format(selectedDate, 'EEEE, MMMM d')}</span>
-                <span className="sm:hidden">{format(selectedDate, 'MMM d, yyyy')}</span>
+            <div className="flex-1 min-w-0">
+              <h2 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-gray-100 mb-1">
+                {format(selectedDate, "EEEE, MMMM d")}
               </h2>
-              <p className="text-xs md:text-sm text-gray-600 dark:text-gray-400">
-                {selectedDateTasks.length === 0 
-                  ? "No tasks scheduled for this date" 
-                  : `${selectedDateTasks.length} task${selectedDateTasks.length === 1 ? '' : 's'} scheduled`}
+              <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">
+                {selectedDateTasks.length === 0
+                  ? "No tasks scheduled"
+                  : `${selectedDateTasks.length} task${
+                      selectedDateTasks.length === 1 ? "" : "s"
+                    } scheduled`}
               </p>
             </div>
           </div>
-          
+
           <div className="w-full max-w-none">
             {selectedDateTasks.length > 0 ? (
               <TaskList tasks={selectedDateTasks} />
@@ -211,7 +215,7 @@ export function UpcomingView() {
                   No tasks scheduled
                 </h3>
                 <p className="text-sm md:text-base text-gray-600 dark:text-gray-400 mb-4">
-                  {isToday(selectedDate) 
+                  {isToday(selectedDate)
                     ? "You're all caught up for today! Time to plan ahead or take a break."
                     : "No tasks are scheduled for this date. Select a different date or add new tasks."}
                 </p>
