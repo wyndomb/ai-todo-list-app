@@ -3,7 +3,7 @@ import { createTaskWithAI } from '@/lib/openai-service';
 
 export async function POST(request: NextRequest) {
   try {
-    const { message } = await request.json();
+    const { message, taskSummary } = await request.json();
 
     if (!message) {
       return NextResponse.json(
@@ -47,16 +47,41 @@ export async function POST(request: NextRequest) {
       timeZone: 'UTC'
     });
 
-    // Create context-aware message with current date information
+    // Create enhanced context-aware message with task summary
     const contextualMessage = `Current date and time context:
 - Today's date: ${currentDate} (${dayOfWeek})
 - Current time: ${currentTime} UTC
 - When user says "today", it refers to ${currentDate}
 - When user says "tomorrow", it refers to ${new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString().split('T')[0]}
 
+${taskSummary ? `Task Summary Data:
+- Total tasks: ${taskSummary.totalTasks}
+- Completed tasks: ${taskSummary.completedTasks}
+- Active tasks: ${taskSummary.activeTasks}
+- Tasks completed today: ${taskSummary.completedToday}
+- Tasks due today: ${taskSummary.dueToday}
+- Overdue tasks: ${taskSummary.overdueTasks}
+- High priority tasks: ${taskSummary.highPriorityTasks}
+- Urgent tasks: ${taskSummary.urgentTasks}
+- Tasks by category: ${JSON.stringify(taskSummary.tasksByCategory)}
+- Recent completion rate: ${taskSummary.completionRate}%
+- Current streak: ${taskSummary.streak} days
+- Most productive time: ${taskSummary.mostProductiveTime || 'Not enough data'}
+- Average tasks per day: ${taskSummary.avgTasksPerDay}
+
+Instructions for AI:
+- Use this task summary to provide personalized productivity insights
+- When asked about productivity, analyze completion rates and patterns
+- For prioritization questions, focus on overdue and high-priority tasks
+- Provide specific, actionable advice based on the user's actual data
+- Be encouraging and supportive while being honest about areas for improvement
+- Use the streak and completion rate to motivate the user
+- Suggest specific improvements based on their patterns
+` : ''}
+
 User's request: ${message}
 
-Please create tasks with the correct due dates based on this current date context. If the user mentions "today", use ${currentDate} as the due date.`;
+Please provide helpful, personalized advice based on the user's actual task data. If creating tasks, use the correct due dates based on the current date context.`;
 
     const result = await createTaskWithAI(contextualMessage);
     
