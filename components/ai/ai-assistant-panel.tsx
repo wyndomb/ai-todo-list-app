@@ -55,16 +55,13 @@ interface TaskSummary {
   activeTasks: number;
   completedToday: number;
   dueToday: number;
-  overdueTasks: number;
-  highPriorityTasks: number;
-  urgentTasks: number;
   tasksByCategory: Record<string, number>;
   completionRate: number;
   streak: number;
   mostProductiveTime?: string;
   avgTasksPerDay: number;
   
-  // New detailed task arrays
+  // Detailed task arrays (these replace the number versions)
   completedTodayTasks: TaskDetail[];
   dueTodayTasks: TaskDetail[];
   overdueTasks: TaskDetail[];
@@ -131,18 +128,15 @@ export function AIAssistantPanel({ open, onClose }: AIAssistantPanelProps) {
     const overdueTasksArray = tasks.filter(t => 
       t.dueDate && t.dueDate < today && !t.completed
     );
-    const overdueTasks = overdueTasksArray.length;
     
     // Priority tasks with details
     const highPriorityTasksArray = tasks.filter(t => 
       !t.completed && (t.priority === 'high' || t.priority === 'urgent')
     );
-    const highPriorityTasks = highPriorityTasksArray.length;
     
     const urgentTasksArray = tasks.filter(t => 
       !t.completed && t.priority === 'urgent'
     );
-    const urgentTasks = urgentTasksArray.length;
     
     // Recent completions (last 5 completed tasks)
     const recentCompletionsArray = tasks
@@ -198,16 +192,13 @@ export function AIAssistantPanel({ open, onClose }: AIAssistantPanelProps) {
       activeTasks,
       completedToday,
       dueToday,
-      overdueTasks,
-      highPriorityTasks,
-      urgentTasks,
       tasksByCategory,
       completionRate,
       streak,
       mostProductiveTime,
       avgTasksPerDay,
       
-      // New detailed task arrays
+      // Detailed task arrays
       completedTodayTasks: completedTodayTasksArray.map(taskToDetail),
       dueTodayTasks: dueTodayTasksArray.map(taskToDetail),
       overdueTasks: overdueTasksArray.map(taskToDetail),

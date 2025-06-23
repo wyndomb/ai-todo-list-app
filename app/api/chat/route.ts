@@ -62,9 +62,9 @@ OVERVIEW METRICS:
 - Active tasks: ${taskSummary.activeTasks}
 - Tasks completed today: ${taskSummary.completedToday}
 - Tasks due today: ${taskSummary.dueToday}
-- Overdue tasks: ${taskSummary.overdueTasks}
-- High priority tasks: ${taskSummary.highPriorityTasks}
-- Urgent tasks: ${taskSummary.urgentTasks}
+- Overdue tasks: ${taskSummary.overdueTasks.length}
+- High priority tasks: ${taskSummary.highPriorityTasks.length}
+- Urgent tasks: ${taskSummary.urgentTasks.length}
 - Current streak: ${taskSummary.streak} days
 - Completion rate: ${taskSummary.completionRate}%
 - Average tasks per day: ${taskSummary.avgTasksPerDay}
