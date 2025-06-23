@@ -40,6 +40,15 @@ interface Message {
   timestamp: string;
 }
 
+interface TaskDetail {
+  id: string;
+  title: string;
+  category?: string;
+  priority: string;
+  dueDate?: string;
+  completedAt?: string;
+}
+
 interface TaskSummary {
   totalTasks: number;
   completedTasks: number;
@@ -54,6 +63,14 @@ interface TaskSummary {
   streak: number;
   mostProductiveTime?: string;
   avgTasksPerDay: number;
+  
+  // New detailed task arrays
+  completedTodayTasks: TaskDetail[];
+  dueTodayTasks: TaskDetail[];
+  overdueTasks: TaskDetail[];
+  highPriorityTasks: TaskDetail[];
+  urgentTasks: TaskDetail[];
+  recentCompletions: TaskDetail[]; // Last 5 completed tasks
 }
 
 export function AIAssistantPanel({ open, onClose }: AIAssistantPanelProps) {
@@ -79,7 +96,17 @@ export function AIAssistantPanel({ open, onClose }: AIAssistantPanelProps) {
     }
   }, [messages]);
 
-  // Generate comprehensive task summary
+  // Helper function to convert task to TaskDetail
+  const taskToDetail = (task: any): TaskDetail => ({
+    id: task.id,
+    title: task.title,
+    category: task.category,
+    priority: task.priority,
+    dueDate: task.dueDate,
+    completedAt: task.completedAt,
+  });
+
+  // Generate comprehensive task summary with detailed task arrays
   const generateTaskSummary = (): TaskSummary => {
     const today = new Date().toISOString().split('T')[0];
     const now = new Date();
@@ -89,28 +116,39 @@ export function AIAssistantPanel({ open, onClose }: AIAssistantPanelProps) {
     const completedTasks = tasks.filter(t => t.completed).length;
     const activeTasks = tasks.filter(t => !t.completed).length;
     
-    // Today's metrics
-    const completedToday = tasks.filter(t => 
-      t.completed && t.createdAt.startsWith(today)
-    ).length;
+    // Today's metrics with detailed task arrays
+    const completedTodayTasksArray = tasks.filter(t => 
+      t.completed && t.completedAt && t.completedAt.startsWith(today)
+    );
+    const completedToday = completedTodayTasksArray.length;
     
-    const dueToday = tasks.filter(t => 
+    const dueTodayTasksArray = tasks.filter(t => 
       t.dueDate === today && !t.completed
-    ).length;
+    );
+    const dueToday = dueTodayTasksArray.length;
     
-    // Overdue tasks
-    const overdueTasks = tasks.filter(t => 
+    // Overdue tasks with details
+    const overdueTasksArray = tasks.filter(t => 
       t.dueDate && t.dueDate < today && !t.completed
-    ).length;
+    );
+    const overdueTasks = overdueTasksArray.length;
     
-    // Priority tasks
-    const highPriorityTasks = tasks.filter(t => 
+    // Priority tasks with details
+    const highPriorityTasksArray = tasks.filter(t => 
       !t.completed && (t.priority === 'high' || t.priority === 'urgent')
-    ).length;
+    );
+    const highPriorityTasks = highPriorityTasksArray.length;
     
-    const urgentTasks = tasks.filter(t => 
+    const urgentTasksArray = tasks.filter(t => 
       !t.completed && t.priority === 'urgent'
-    ).length;
+    );
+    const urgentTasks = urgentTasksArray.length;
+    
+    // Recent completions (last 5 completed tasks)
+    const recentCompletionsArray = tasks
+      .filter(t => t.completed && t.completedAt)
+      .sort((a, b) => new Date(b.completedAt!).getTime() - new Date(a.completedAt!).getTime())
+      .slice(0, 5);
     
     // Tasks by category
     const tasksByCategory = tasks.reduce((acc, task) => {
@@ -129,7 +167,7 @@ export function AIAssistantPanel({ open, onClose }: AIAssistantPanelProps) {
     while (streak < 30) { // Check up to 30 days back
       const dateStr = currentDate.toISOString().split('T')[0];
       const hasCompletedTask = tasks.some(task => 
-        task.completed && task.createdAt.startsWith(dateStr)
+        task.completed && task.completedAt && task.completedAt.startsWith(dateStr)
       );
       
       if (!hasCompletedTask && streak > 0) break;
@@ -168,6 +206,14 @@ export function AIAssistantPanel({ open, onClose }: AIAssistantPanelProps) {
       streak,
       mostProductiveTime,
       avgTasksPerDay,
+      
+      // New detailed task arrays
+      completedTodayTasks: completedTodayTasksArray.map(taskToDetail),
+      dueTodayTasks: dueTodayTasksArray.map(taskToDetail),
+      overdueTasks: overdueTasksArray.map(taskToDetail),
+      highPriorityTasks: highPriorityTasksArray.map(taskToDetail),
+      urgentTasks: urgentTasksArray.map(taskToDetail),
+      recentCompletions: recentCompletionsArray.map(taskToDetail),
     };
   };
 
@@ -262,12 +308,57 @@ export function AIAssistantPanel({ open, onClose }: AIAssistantPanelProps) {
   const generateEnhancedBuiltInResponse = (userInput: string, summary: TaskSummary) => {
     const lowerInput = userInput.toLowerCase();
     
-    // Productivity analysis queries
+    // Productivity analysis queries with specific task details
     if (lowerInput.includes('what did i') && (lowerInput.includes('today') || lowerInput.includes('accomplish'))) {
       if (summary.completedToday === 0) {
-        return `📊 **Today's Summary:**\n\nYou haven't completed any tasks today yet, but don't worry! You have ${summary.dueToday} task${summary.dueToday === 1 ? '' : 's'} due today.\n\n${summary.overdueTasks > 0 ? `⚠️ You also have ${summary.overdueTasks} overdue task${summary.overdueTasks === 1 ? '' : 's'} that need attention.\n\n` : ''}💪 **Suggestion:** Start with your ${summary.urgentTasks > 0 ? 'urgent' : 'high priority'} tasks to build momentum!`;
+        let response = `📊 **Today's Summary:**\n\nYou haven't completed any tasks today yet, but don't worry!`;
+        
+        if (summary.dueToday > 0) {
+          response += `\n\n📅 **Tasks due today:**`;
+          summary.dueTodayTasks.forEach(task => {
+            const priorityEmoji = task.priority === 'urgent' ? '🚨' : 
+                                 task.priority === 'high' ? '🔥' : 
+                                 task.priority === 'medium' ? '⚡' : '📝';
+            response += `\n${priorityEmoji} "${task.title}"${task.category ? ` (${task.category})` : ''}`;
+          });
+        }
+        
+        if (summary.overdueTasks.length > 0) {
+          response += `\n\n⚠️ **Overdue tasks that need attention:**`;
+          summary.overdueTasks.slice(0, 3).forEach(task => {
+            response += `\n🚨 "${task.title}"${task.dueDate ? ` (was due ${format(new Date(task.dueDate), 'MMM dd')})` : ''}`;
+          });
+          if (summary.overdueTasks.length > 3) {
+            response += `\n... and ${summary.overdueTasks.length - 3} more overdue tasks`;
+          }
+        }
+        
+        response += `\n\n💪 **Suggestion:** Start with your ${summary.urgentTasks.length > 0 ? 'urgent' : 'high priority'} tasks to build momentum!`;
+        return response;
       } else {
-        return `🎉 **Great work today!**\n\n✅ You've completed **${summary.completedToday}** task${summary.completedToday === 1 ? '' : 's'} today!\n📈 Overall completion rate: **${summary.completionRate}%**\n🔥 Current streak: **${summary.streak}** day${summary.streak === 1 ? '' : 's'}\n\n${summary.dueToday > 0 ? `📋 You still have ${summary.dueToday} task${summary.dueToday === 1 ? '' : 's'} due today.` : '🎯 All caught up for today!'}\n\nKeep up the excellent work! 🚀`;
+        let response = `🎉 **Great work today!**\n\n✅ **You've completed ${summary.completedToday} task${summary.completedToday === 1 ? '' : 's'} today:**\n`;
+        
+        summary.completedTodayTasks.forEach(task => {
+          const timeCompleted = task.completedAt ? format(new Date(task.completedAt), 'h:mm a') : '';
+          response += `\n• "${task.title}"${task.category ? ` (${task.category})` : ''}${timeCompleted ? ` - completed at ${timeCompleted}` : ''}`;
+        });
+        
+        response += `\n\n📈 **Overall completion rate:** ${summary.completionRate}%\n🔥 **Current streak:** ${summary.streak} day${summary.streak === 1 ? '' : 's'}`;
+        
+        if (summary.dueToday > 0) {
+          response += `\n\n📋 **Still due today:**`;
+          summary.dueTodayTasks.forEach(task => {
+            const priorityEmoji = task.priority === 'urgent' ? '🚨' : 
+                                 task.priority === 'high' ? '🔥' : 
+                                 task.priority === 'medium' ? '⚡' : '📝';
+            response += `\n${priorityEmoji} "${task.title}"${task.category ? ` (${task.category})` : ''}`;
+          });
+        } else {
+          response += `\n\n🎯 All caught up for today!`;
+        }
+        
+        response += `\n\nKeep up the excellent work! 🚀`;
+        return response;
       }
     }
     
@@ -276,31 +367,115 @@ export function AIAssistantPanel({ open, onClose }: AIAssistantPanelProps) {
                               summary.completionRate >= 60 ? 'Good' : 
                               summary.completionRate >= 40 ? 'Fair' : 'Needs Improvement';
       
-      return `📊 **Productivity Analysis:**\n\n🎯 **Overall Performance:** ${productivityLevel} (${summary.completionRate}% completion rate)\n📈 **Tasks completed:** ${summary.completedTasks} out of ${summary.totalTasks}\n🔥 **Current streak:** ${summary.streak} day${summary.streak === 1 ? '' : 's'}\n📅 **Daily average:** ${summary.avgTasksPerDay} tasks per day\n\n**Category Breakdown:**\n${Object.entries(summary.tasksByCategory).map(([cat, count]) => `• ${cat}: ${count} tasks`).join('\n')}\n\n${summary.completionRate >= 70 ? '🌟 You\'re doing great! Keep maintaining this momentum.' : '💡 **Tip:** Try breaking down larger tasks into smaller, manageable chunks to boost your completion rate.'}`;
+      let response = `📊 **Productivity Analysis:**\n\n🎯 **Overall Performance:** ${productivityLevel} (${summary.completionRate}% completion rate)\n📈 **Tasks completed:** ${summary.completedTasks} out of ${summary.totalTasks}\n🔥 **Current streak:** ${summary.streak} day${summary.streak === 1 ? '' : 's'}\n📅 **Daily average:** ${summary.avgTasksPerDay} tasks per day`;
+      
+      if (summary.recentCompletions.length > 0) {
+        response += `\n\n✅ **Recent accomplishments:**`;
+        summary.recentCompletions.forEach(task => {
+          const timeAgo = task.completedAt ? format(new Date(task.completedAt), 'MMM dd') : '';
+          response += `\n• "${task.title}"${task.category ? ` (${task.category})` : ''}${timeAgo ? ` - ${timeAgo}` : ''}`;
+        });
+      }
+      
+      response += `\n\n**Category Breakdown:**\n${Object.entries(summary.tasksByCategory).map(([cat, count]) => `• ${cat}: ${count} tasks`).join('\n')}`;
+      
+      response += `\n\n${summary.completionRate >= 70 ? '🌟 You\'re doing great! Keep maintaining this momentum.' : '💡 **Tip:** Try breaking down larger tasks into smaller, manageable chunks to boost your completion rate.'}`;
+      return response;
     }
     
     if (lowerInput.includes('prioritize') || lowerInput.includes('priority') || lowerInput.includes('focus')) {
       let priorityAdvice = '🎯 **Priority Recommendations:**\n\n';
       
-      if (summary.overdueTasks > 0) {
-        priorityAdvice += `🚨 **URGENT:** You have ${summary.overdueTasks} overdue task${summary.overdueTasks === 1 ? '' : 's'}. These should be your top priority!\n\n`;
+      if (summary.overdueTasks.length > 0) {
+        priorityAdvice += `🚨 **URGENT - Overdue Tasks:**`;
+        summary.overdueTasks.slice(0, 3).forEach(task => {
+          priorityAdvice += `\n• "${task.title}"${task.dueDate ? ` (was due ${format(new Date(task.dueDate), 'MMM dd')})` : ''}${task.category ? ` - ${task.category}` : ''}`;
+        });
+        if (summary.overdueTasks.length > 3) {
+          priorityAdvice += `\n• ... and ${summary.overdueTasks.length - 3} more overdue tasks`;
+        }
+        priorityAdvice += `\n\n`;
       }
       
-      if (summary.urgentTasks > 0) {
-        priorityAdvice += `⚡ **High Priority:** ${summary.urgentTasks} urgent task${summary.urgentTasks === 1 ? '' : 's'} need immediate attention.\n\n`;
+      if (summary.urgentTasks.length > 0) {
+        priorityAdvice += `⚡ **High Priority - Urgent Tasks:**`;
+        summary.urgentTasks.forEach(task => {
+          priorityAdvice += `\n• "${task.title}"${task.dueDate ? ` (due ${format(new Date(task.dueDate), 'MMM dd')})` : ''}${task.category ? ` - ${task.category}` : ''}`;
+        });
+        priorityAdvice += `\n\n`;
       }
       
       if (summary.dueToday > 0) {
-        priorityAdvice += `📅 **Due Today:** ${summary.dueToday} task${summary.dueToday === 1 ? '' : 's'} scheduled for today.\n\n`;
+        priorityAdvice += `📅 **Due Today:**`;
+        summary.dueTodayTasks.forEach(task => {
+          const priorityEmoji = task.priority === 'urgent' ? '🚨' : 
+                               task.priority === 'high' ? '🔥' : 
+                               task.priority === 'medium' ? '⚡' : '📝';
+          priorityAdvice += `\n${priorityEmoji} "${task.title}"${task.category ? ` - ${task.category}` : ''}`;
+        });
+        priorityAdvice += `\n\n`;
       }
       
-      if (summary.overdueTasks === 0 && summary.urgentTasks === 0 && summary.dueToday === 0) {
+      if (summary.overdueTasks.length === 0 && summary.urgentTasks.length === 0 && summary.dueToday === 0) {
         priorityAdvice += '✨ Great news! No urgent or overdue tasks. Focus on your high-priority items or plan ahead.\n\n';
       }
       
       priorityAdvice += `💡 **Strategy:** ${summary.mostProductiveTime ? `Work on important tasks during your most productive time (${summary.mostProductiveTime}).` : 'Start with quick wins to build momentum, then tackle larger tasks.'}`;
       
       return priorityAdvice;
+    }
+    
+    // Enhanced overdue analysis with specific tasks
+    if (lowerInput.includes('overdue')) {
+      if (summary.overdueTasks.length === 0) {
+        return "🎉 **Excellent!** You don't have any overdue tasks. You're staying on top of things!\n\n✨ This is a great sign of good time management. Keep up the momentum!";
+      } else {
+        let response = `⚠️ **Overdue Tasks Alert**\n\nYou have ${summary.overdueTasks.length} overdue task${summary.overdueTasks.length > 1 ? 's' : ''}:\n\n`;
+        
+        summary.overdueTasks.forEach(task => {
+          const daysPast = task.dueDate ? Math.floor((new Date().getTime() - new Date(task.dueDate).getTime()) / (1000 * 60 * 60 * 24)) : 0;
+          const priorityEmoji = task.priority === 'urgent' ? '🚨' : 
+                               task.priority === 'high' ? '🔥' : 
+                               task.priority === 'medium' ? '⚡' : '📝';
+          response += `${priorityEmoji} "${task.title}"${task.category ? ` (${task.category})` : ''} - ${daysPast} day${daysPast === 1 ? '' : 's'} overdue\n`;
+        });
+        
+        response += `\n💡 **Recommendation:** Start with the oldest or most important overdue tasks first. Consider breaking them into smaller chunks if they're overwhelming.`;
+        return response;
+      }
+    }
+    
+    // Enhanced today's tasks with specific details
+    if (lowerInput.includes('today') || lowerInput.includes('do today')) {
+      if (summary.dueToday === 0) {
+        let response = `📅 **Today's Schedule:** All clear!\n\nNo tasks scheduled for today.`;
+        
+        if (summary.overdueTasks.length > 0) {
+          response += ` However, you have ${summary.overdueTasks.length} overdue task${summary.overdueTasks.length === 1 ? '' : 's'} that could use attention:\n\n`;
+          summary.overdueTasks.slice(0, 3).forEach(task => {
+            response += `🚨 "${task.title}"${task.category ? ` (${task.category})` : ''}\n`;
+          });
+          if (summary.overdueTasks.length > 3) {
+            response += `... and ${summary.overdueTasks.length - 3} more`;
+          }
+        } else {
+          response += ' Perfect time to get ahead on tomorrow\'s work or plan for the future! 🚀';
+        }
+        
+        return response;
+      } else {
+        let response = `📋 **Today's Tasks** (${summary.dueToday} task${summary.dueToday > 1 ? 's' : ''}):\n\n`;
+        
+        summary.dueTodayTasks.forEach(task => {
+          const priorityEmoji = task.priority === 'urgent' ? '🚨' : 
+                               task.priority === 'high' ? '🔥' : 
+                               task.priority === 'medium' ? '⚡' : '📝';
+          response += `${priorityEmoji} "${task.title}"${task.category ? ` (${task.category})` : ''} - ${task.priority} priority\n`;
+        });
+        
+        response += `\n💪 You've got this! ${summary.completedToday > 0 ? `Already completed ${summary.completedToday} task${summary.completedToday === 1 ? '' : 's'} today.` : 'Start with the highest priority items.'}`;
+        return response;
+      }
     }
     
     // Task creation with enhanced context
@@ -335,65 +510,26 @@ export function AIAssistantPanel({ open, onClose }: AIAssistantPanelProps) {
       return `✨ **Task Created Successfully!**\n\n📝 **"${title}"**\n🎯 Priority: ${priority}\n${category ? `📁 Category: ${category}\n` : ''}🤖 AI Generated\n\n${summary.activeTasks + 1} active tasks total. ${priority === 'urgent' ? 'This urgent task has been added to your priority list!' : 'Ready to tackle it?'} 💪`;
     }
     
-    // Enhanced task counting
+    // Enhanced task counting with recent activity
     if (lowerInput.includes('how many task') || lowerInput.includes('task count')) {
-      return `📊 **Task Overview:**\n\n📋 **Total tasks:** ${summary.totalTasks}\n✅ **Completed:** ${summary.completedTasks}\n⏳ **Active:** ${summary.activeTasks}\n📅 **Due today:** ${summary.dueToday}\n⚠️ **Overdue:** ${summary.overdueTasks}\n🔥 **High priority:** ${summary.highPriorityTasks}\n\n📈 **Completion rate:** ${summary.completionRate}%\n🎯 **Daily average:** ${summary.avgTasksPerDay} tasks\n\n${summary.activeTasks > 0 ? "Let's get some done! 💪" : "You're all caught up! 🎉"}`;
-    }
-    
-    // Enhanced overdue analysis
-    if (lowerInput.includes('overdue')) {
-      if (summary.overdueTasks === 0) {
-        return "🎉 **Excellent!** You don't have any overdue tasks. You're staying on top of things!\n\n✨ This is a great sign of good time management. Keep up the momentum!";
-      } else {
-        const overdueTasks = tasks.filter(t => 
-          t.dueDate && t.dueDate < new Date().toISOString().split('T')[0] && !t.completed
-        );
-        
-        let response = `⚠️ **Overdue Tasks Alert**\n\nYou have ${summary.overdueTasks} overdue task${summary.overdueTasks > 1 ? 's' : ''}:\n\n`;
-        overdueTasks.slice(0, 5).forEach(task => {
-          response += `• "${task.title}" (due: ${format(new Date(task.dueDate!), 'MMM dd')})\n`;
-        });
-        
-        if (overdueTasks.length > 5) {
-          response += `... and ${overdueTasks.length - 5} more\n`;
-        }
-        
-        response += `\n💡 **Recommendation:** Start with the oldest or most important overdue tasks first. Consider breaking them into smaller chunks if they're overwhelming.`;
-        return response;
-      }
-    }
-    
-    // Enhanced help
-    if (lowerInput.includes('help')) {
-      return `🤖 **I'm your AI Productivity Coach!** Here's how I can help:\n\n📊 **Productivity Analysis:**\n• "What did I accomplish today/this week?"\n• "How's my productivity level?"\n• "Show me my completion rate"\n\n🎯 **Priority & Focus:**\n• "What should I prioritize?"\n• "What's most urgent?"\n• "Help me focus"\n\n📋 **Task Management:**\n• "Add a task to review quarterly reports"\n• "How many tasks do I have?"\n• "What's overdue?"\n\n📈 **Insights & Patterns:**\n• "When am I most productive?"\n• "What's my daily average?"\n• "Analyze my work habits"\n\nJust ask naturally - I understand context and provide personalized advice based on your actual task data! ✨`;
-    }
-    
-    // Enhanced today's tasks
-    if (lowerInput.includes('today') || lowerInput.includes('do today')) {
-      const todayTasks = tasks.filter(t => 
-        t.dueDate === new Date().toISOString().split('T')[0] && !t.completed
-      );
+      let response = `📊 **Task Overview:**\n\n📋 **Total tasks:** ${summary.totalTasks}\n✅ **Completed:** ${summary.completedTasks}\n⏳ **Active:** ${summary.activeTasks}\n📅 **Due today:** ${summary.dueToday}\n⚠️ **Overdue:** ${summary.overdueTasks.length}\n🔥 **High priority:** ${summary.highPriorityTasks.length}\n\n📈 **Completion rate:** ${summary.completionRate}%\n🎯 **Daily average:** ${summary.avgTasksPerDay} tasks`;
       
-      if (todayTasks.length === 0) {
-        return `📅 **Today's Schedule:** All clear!\n\nNo tasks scheduled for today. ${summary.overdueTasks > 0 ? `However, you have ${summary.overdueTasks} overdue task${summary.overdueTasks === 1 ? '' : 's'} that could use attention.` : 'Perfect time to get ahead on tomorrow\'s work or plan for the future!'} 🚀`;
-      } else {
-        let response = `📋 **Today's Tasks** (${todayTasks.length} task${todayTasks.length > 1 ? 's' : ''}):\n\n`;
-        todayTasks.forEach(task => {
-          const priorityEmoji = task.priority === 'urgent' ? '🚨' : 
-                               task.priority === 'high' ? '🔥' : 
-                               task.priority === 'medium' ? '⚡' : '📝';
-          response += `${priorityEmoji} "${task.title}" (${task.priority} priority)\n`;
+      if (summary.recentCompletions.length > 0) {
+        response += `\n\n🎉 **Recent completions:**`;
+        summary.recentCompletions.slice(0, 3).forEach(task => {
+          response += `\n• "${task.title}"${task.category ? ` (${task.category})` : ''}`;
         });
-        response += `\n💪 You've got this! ${summary.completedToday > 0 ? `Already completed ${summary.completedToday} task${summary.completedToday === 1 ? '' : 's'} today.` : 'Start with the highest priority items.'}`;
-        return response;
       }
+      
+      response += `\n\n${summary.activeTasks > 0 ? "Let's get some done! 💪" : "You're all caught up! 🎉"}`;
+      return response;
     }
     
     // Enhanced productivity tips
     if (lowerInput.includes('productivity tip') || lowerInput.includes('tip')) {
       const tips = [
         `🍅 **Pomodoro Power:** Try 25-minute focused work sessions with 5-minute breaks. With your current ${summary.avgTasksPerDay} tasks per day, this could help you stay focused!`,
-        `🎯 **Priority Matrix:** You have ${summary.highPriorityTasks} high-priority tasks. Focus on important AND urgent items first, then plan the important but not urgent ones.`,
+        `🎯 **Priority Matrix:** You have ${summary.highPriorityTasks.length} high-priority tasks. Focus on important AND urgent items first, then plan the important but not urgent ones.`,
         `📝 **Daily Review:** With a ${summary.completionRate}% completion rate, try reviewing your task list each evening to plan tomorrow. This could boost your productivity!`,
         `🧩 **Task Chunking:** Break large tasks into smaller pieces. Your ${summary.streak}-day streak shows you're consistent - smaller tasks can help maintain momentum!`,
         `⏰ **Time Blocking:** ${summary.mostProductiveTime ? `Since you're most productive in the ${summary.mostProductiveTime}, schedule important tasks during this time.` : 'Try scheduling specific times for different types of work to create structure.'}`,
@@ -401,6 +537,11 @@ export function AIAssistantPanel({ open, onClose }: AIAssistantPanelProps) {
       ];
       
       return tips[Math.floor(Math.random() * tips.length)];
+    }
+    
+    // Enhanced help
+    if (lowerInput.includes('help')) {
+      return `🤖 **I'm your AI Productivity Coach!** Here's how I can help:\n\n📊 **Productivity Analysis:**\n• "What did I accomplish today/this week?"\n• "How's my productivity level?"\n• "Show me my completion rate"\n\n🎯 **Priority & Focus:**\n• "What should I prioritize?"\n• "What's most urgent?"\n• "Help me focus"\n\n📋 **Task Management:**\n• "Add a task to review quarterly reports"\n• "How many tasks do I have?"\n• "What's overdue?"\n\n📈 **Insights & Patterns:**\n• "When am I most productive?"\n• "What's my daily average?"\n• "Analyze my work habits"\n\nJust ask naturally - I understand context and provide personalized advice based on your actual task data! ✨`;
     }
     
     // Default enhanced response
