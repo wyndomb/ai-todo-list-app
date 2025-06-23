@@ -3,7 +3,7 @@ import { createTaskWithAI } from '@/lib/openai-service';
 
 export async function POST(request: NextRequest) {
   try {
-    const { message, taskSummary } = await request.json();
+    const { message, taskSummary, intent } = await request.json();
 
     if (!message) {
       return NextResponse.json(
@@ -47,109 +47,155 @@ export async function POST(request: NextRequest) {
       timeZone: 'UTC'
     });
 
-    // Create enhanced context-aware message with detailed task information
-    const contextualMessage = `Current date and time context:
+    // Create dynamic context-aware message based on intent and available data
+    let contextualMessage = `Current date and time context:
 - Today's date: ${currentDate} (${dayOfWeek})
 - Current time: ${currentTime} UTC
 - When user says "today", it refers to ${currentDate}
 - When user says "tomorrow", it refers to ${new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString().split('T')[0]}
 
-${taskSummary ? `DETAILED TASK SUMMARY DATA:
+DETECTED USER INTENT: ${intent || 'general'}
 
-OVERVIEW METRICS:
+`;
+
+    // Conditionally add task summary sections based on what data is available
+    if (taskSummary) {
+      contextualMessage += `RELEVANT TASK DATA:\n\n`;
+      
+      // Core metrics (always included)
+      if (taskSummary.totalTasks !== undefined) {
+        contextualMessage += `OVERVIEW METRICS:
 - Total tasks: ${taskSummary.totalTasks}
 - Completed tasks: ${taskSummary.completedTasks}
 - Active tasks: ${taskSummary.activeTasks}
-- Tasks completed today: ${taskSummary.completedToday}
-- Tasks due today: ${taskSummary.dueToday}
-- Overdue tasks: ${taskSummary.overdueTasks.length}
-- High priority tasks: ${taskSummary.highPriorityTasks.length}
-- Urgent tasks: ${taskSummary.urgentTasks.length}
-- Current streak: ${taskSummary.streak} days
 - Completion rate: ${taskSummary.completionRate}%
-- Average tasks per day: ${taskSummary.avgTasksPerDay}
-- Most productive time: ${taskSummary.mostProductiveTime || 'Not enough data'}
+- Current streak: ${taskSummary.streak} days
 
-TASKS BY CATEGORY:
-${JSON.stringify(taskSummary.tasksByCategory, null, 2)}
-
-SPECIFIC TASKS COMPLETED TODAY (${taskSummary.completedTodayTasks.length} tasks):
+`;
+      }
+      
+      // Today-specific data
+      if (taskSummary.completedTodayTasks || taskSummary.dueTodayTasks) {
+        contextualMessage += `TODAY'S ACTIVITY:\n`;
+        
+        if (taskSummary.completedTodayTasks && taskSummary.completedTodayTasks.length > 0) {
+          contextualMessage += `TASKS COMPLETED TODAY (${taskSummary.completedTodayTasks.length} tasks):
 ${taskSummary.completedTodayTasks.map(task => 
   `- "${task.title}"${task.category ? ` (${task.category})` : ''}${task.priority ? ` [${task.priority} priority]` : ''}${task.completedAt ? ` - completed at ${new Date(task.completedAt).toLocaleTimeString('en-US', { hour12: true })}` : ''}`
 ).join('\n')}
 
-TASKS DUE TODAY (${taskSummary.dueTodayTasks.length} tasks):
+`;
+        }
+        
+        if (taskSummary.dueTodayTasks && taskSummary.dueTodayTasks.length > 0) {
+          contextualMessage += `TASKS DUE TODAY (${taskSummary.dueTodayTasks.length} tasks):
 ${taskSummary.dueTodayTasks.map(task => 
   `- "${task.title}"${task.category ? ` (${task.category})` : ''}${task.priority ? ` [${task.priority} priority]` : ''}`
 ).join('\n')}
 
-OVERDUE TASKS (${taskSummary.overdueTasks.length} tasks):
+`;
+        }
+      }
+      
+      // Priority and overdue data
+      if (taskSummary.overdueTasks || taskSummary.urgentTasks || taskSummary.highPriorityTasks) {
+        contextualMessage += `PRIORITY TASKS:\n`;
+        
+        if (taskSummary.overdueTasks && taskSummary.overdueTasks.length > 0) {
+          contextualMessage += `OVERDUE TASKS (${taskSummary.overdueTasks.length} tasks):
 ${taskSummary.overdueTasks.map(task => 
   `- "${task.title}"${task.category ? ` (${task.category})` : ''}${task.priority ? ` [${task.priority} priority]` : ''}${task.dueDate ? ` - was due ${task.dueDate}` : ''}`
 ).join('\n')}
 
-HIGH PRIORITY TASKS (${taskSummary.highPriorityTasks.length} tasks):
-${taskSummary.highPriorityTasks.map(task => 
-  `- "${task.title}"${task.category ? ` (${task.category})` : ''}${task.priority ? ` [${task.priority} priority]` : ''}${task.dueDate ? ` - due ${task.dueDate}` : ''}`
-).join('\n')}
-
-URGENT TASKS (${taskSummary.urgentTasks.length} tasks):
+`;
+        }
+        
+        if (taskSummary.urgentTasks && taskSummary.urgentTasks.length > 0) {
+          contextualMessage += `URGENT TASKS (${taskSummary.urgentTasks.length} tasks):
 ${taskSummary.urgentTasks.map(task => 
   `- "${task.title}"${task.category ? ` (${task.category})` : ''}${task.dueDate ? ` - due ${task.dueDate}` : ''}`
 ).join('\n')}
 
+`;
+        }
+        
+        if (taskSummary.highPriorityTasks && taskSummary.highPriorityTasks.length > 0) {
+          contextualMessage += `HIGH PRIORITY TASKS (${taskSummary.highPriorityTasks.length} tasks):
+${taskSummary.highPriorityTasks.map(task => 
+  `- "${task.title}"${task.category ? ` (${task.category})` : ''}${task.priority ? ` [${task.priority} priority]` : ''}${task.dueDate ? ` - due ${task.dueDate}` : ''}`
+).join('\n')}
+
+`;
+        }
+      }
+      
+      // Productivity data
+      if (taskSummary.recentCompletions || taskSummary.tasksByCategory || taskSummary.avgTasksPerDay) {
+        contextualMessage += `PRODUCTIVITY INSIGHTS:\n`;
+        
+        if (taskSummary.avgTasksPerDay !== undefined) {
+          contextualMessage += `- Average tasks per day: ${taskSummary.avgTasksPerDay}
+`;
+        }
+        
+        if (taskSummary.mostProductiveTime) {
+          contextualMessage += `- Most productive time: ${taskSummary.mostProductiveTime}
+`;
+        }
+        
+        if (taskSummary.tasksByCategory) {
+          contextualMessage += `- Tasks by category: ${JSON.stringify(taskSummary.tasksByCategory)}
+`;
+        }
+        
+        if (taskSummary.recentCompletions && taskSummary.recentCompletions.length > 0) {
+          contextualMessage += `
 RECENT COMPLETIONS (last ${taskSummary.recentCompletions.length} completed tasks):
 ${taskSummary.recentCompletions.map(task => 
   `- "${task.title}"${task.category ? ` (${task.category})` : ''}${task.completedAt ? ` - completed ${new Date(task.completedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}` : ''}`
 ).join('\n')}
 
-CRITICAL INSTRUCTIONS FOR AI ASSISTANT:
+`;
+        }
+      }
+      
+      contextualMessage += `CRITICAL INSTRUCTIONS FOR AI ASSISTANT:
 
-1. PRODUCTIVITY ANALYSIS RESPONSES:
-   - When users ask "What did I accomplish today?" or similar, ALWAYS list the specific tasks from completedTodayTasks array by title
-   - Include completion times when available (from completedAt field)
-   - Mention categories and priorities for context
-   - Be specific: "You completed 'Review quarterly reports' (Work) at 10:30 AM" instead of "You completed 3 tasks"
+1. **SPECIFIC TASK ANALYSIS**: Reference actual task titles from the provided data. Never give generic responses.
 
-2. PRIORITIZATION RESPONSES:
-   - When asked about priorities, list specific tasks from overdueTasks and urgentTasks arrays
-   - Include due dates and how many days overdue for overdue tasks
-   - Reference actual task titles: "Your overdue task 'Prepare presentation slides' was due 3 days ago"
+2. **INTENT-BASED RESPONSES**: 
+   - For "${intent}" intent, focus on the most relevant data provided above
+   - Use specific task titles, completion times, due dates, and categories
+   - Be encouraging and supportive while being factual
 
-3. TODAY'S TASKS RESPONSES:
-   - List specific tasks from dueTodayTasks array with their priorities and categories
-   - Be specific: "Today you have 'Call dentist' (Health, high priority) and 'Buy groceries' (Personal, medium priority)"
-
-4. OVERDUE ANALYSIS:
-   - List specific overdue tasks from overdueTasks array
-   - Calculate and mention how many days each task is overdue
-   - Prioritize by urgency and due date
-
-5. TASK CREATION:
-   - When creating tasks, respond with JSON format:
+3. **TASK CREATION**: When users want to create tasks, respond with this exact JSON format:
+   \`\`\`json
    {
-     "title": "Task title",
-     "description": "Task description", 
+     "title": "Specific task title",
+     "description": "Detailed description if provided",
      "priority": "low|medium|high|urgent",
-     "category": "category name if mentioned",
+     "category": "category name if mentioned or inferred",
      "dueDate": "YYYY-MM-DD format if date mentioned"
    }
+   \`\`\`
 
-6. GENERAL GUIDELINES:
-   - ALWAYS reference specific task titles when discussing productivity, accomplishments, or priorities
-   - Use the actual data provided - don't make up task names
-   - Be encouraging and supportive while being specific
-   - Provide actionable advice based on the user's actual task data
-   - Use emojis and formatting to make responses engaging
-   - When no specific tasks exist in a category, acknowledge that clearly
+4. **PERSONALIZATION**: 
+   - Address the user's actual work patterns and habits
+   - Reference their completion rate, streak, and productivity metrics
+   - Provide advice based on their specific task categories and priorities
+   - Celebrate specific accomplishments by task name
 
-7. RESPONSE TONE:
-   - Be personal and specific: "Your 'Review quarterly reports' task" not "one of your tasks"
-   - Celebrate specific accomplishments: "Great job completing 'Call dentist' this morning!"
-   - Provide specific guidance: "Focus on 'Prepare presentation slides' since it's 3 days overdue"
+5. **RESPONSE REQUIREMENTS**:
+   - ALWAYS use actual task titles from the provided data
+   - Include specific details: completion times, due dates, categories, priorities
+   - Use emojis and formatting for engagement
+   - Provide actionable, specific advice
 
-Remember: The user's actual task data is provided above. Use this real data to give personalized, specific responses that reference actual task titles, categories, priorities, and completion times.
-` : ''}
+Remember: Use the specific task data provided above to give personalized, detailed responses that reference actual task titles and details.
+`;
+    }
+
+    contextualMessage += `
 
 User's request: ${message}
 
