@@ -2,10 +2,19 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createTaskWithAI } from '@/lib/openai-service';
 
 export async function POST(request: NextRequest) {
+  console.log('🚀 AI Chat API route accessed - starting request processing');
+  
   try {
     const { message, taskSummary, intent } = await request.json();
+    console.log('📝 Request data received:', { 
+      messageLength: message?.length, 
+      intent, 
+      hasSummary: !!taskSummary,
+      summaryKeys: taskSummary ? Object.keys(taskSummary) : []
+    });
 
     if (!message) {
+      console.log('❌ No message provided in request');
       return NextResponse.json(
         { error: 'Message is required' },
         { status: 400 }
@@ -14,6 +23,7 @@ export async function POST(request: NextRequest) {
 
     // Check if OpenAI is configured
     if (!process.env.OPENAI_API_KEY) {
+      console.log('⚠️ OpenAI API key not configured');
       return NextResponse.json(
         { 
           error: 'OpenAI API key is not configured',
@@ -25,6 +35,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (!process.env.OPENAI_ASSISTANT_ID) {
+      console.log('⚠️ OpenAI Assistant ID not configured');
       return NextResponse.json(
         { 
           error: 'OpenAI Assistant ID is not configured',
@@ -34,6 +45,8 @@ export async function POST(request: NextRequest) {
         { status: 200 }
       );
     }
+
+    console.log('✅ OpenAI configuration validated, proceeding with AI request');
 
     // Get current date and time information
     const now = new Date();
@@ -201,7 +214,15 @@ User's request: ${message}
 
 Please provide helpful, personalized advice based on the user's actual task data. If creating tasks, use the correct due dates based on the current date context. Always reference specific task titles when discussing productivity or priorities.`;
 
+    console.log('📤 Sending request to OpenAI service with message length:', contextualMessage.length);
+    
     const result = await createTaskWithAI(contextualMessage);
+    
+    console.log('✅ OpenAI service returned result:', { 
+      success: result?.success, 
+      hasTask: !!result?.task,
+      messageLength: result?.message?.length 
+    });
     
     return NextResponse.json({
       success: true,
@@ -209,7 +230,13 @@ Please provide helpful, personalized advice based on the user's actual task data
     });
 
   } catch (error) {
-    console.error('Chat API Error:', error);
+    console.error('💥 CRITICAL ERROR in Chat API:', {
+      error: error,
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+      name: error instanceof Error ? error.name : undefined,
+      cause: error instanceof Error ? error.cause : undefined
+    });
     
     // Provide specific error handling based on error type
     let fallbackMessage = "I'm having trouble connecting to the AI service right now, but I can still help you with task management using my built-in responses! Try asking me to add a task or check your productivity stats.";

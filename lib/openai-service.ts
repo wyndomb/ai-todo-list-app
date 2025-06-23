@@ -8,20 +8,34 @@ const openai = process.env.OPENAI_API_KEY ? new OpenAI({
 const ASSISTANT_ID = process.env.OPENAI_ASSISTANT_ID;
 
 export async function createTaskWithAI(userMessage: string) {
+  console.log('🤖 OpenAI service called with message length:', userMessage.length);
+  
   // Check if OpenAI is properly configured
   if (!openai) {
+    console.error('❌ OpenAI client not initialized - API key missing');
     throw new Error('OpenAI API key is not configured. Please add OPENAI_API_KEY to your environment variables.');
   }
 
   if (!ASSISTANT_ID) {
+    console.error('❌ OpenAI Assistant ID not configured');
     throw new Error('OpenAI Assistant ID is not configured. Please add OPENAI_ASSISTANT_ID to your environment variables.');
   }
 
+  console.log('✅ OpenAI configuration validated, proceeding with API calls');
+
   try {
     // Test the connection first with a simple API call
+    console.log('🔍 Testing OpenAI connection...');
     try {
       await openai.models.list();
+      console.log('✅ OpenAI connection test successful');
     } catch (connectionError) {
+      console.error('💥 OpenAI connection test failed:', {
+        error: connectionError,
+        message: connectionError instanceof Error ? connectionError.message : 'Unknown connection error',
+        stack: connectionError instanceof Error ? connectionError.stack : undefined
+      });
+      
       if (connectionError instanceof Error) {
         if (connectionError.message.includes('Connection error') || connectionError.message.includes('FetchError')) {
           throw new Error('Unable to connect to OpenAI API. Please check your internet connection and API key validity.');
@@ -34,9 +48,12 @@ export async function createTaskWithAI(userMessage: string) {
     }
 
     // Create a thread
+    console.log('🧵 Creating OpenAI thread...');
     const thread = await openai.beta.threads.create();
+    console.log('✅ Thread created:', thread.id);
 
     // Add the user's message to the thread with comprehensive system instructions
+    console.log('📝 Adding message to thread...');
     await openai.beta.threads.messages.create(thread.id, {
       role: 'user',
       content: `${userMessage}
@@ -114,40 +131,55 @@ CRITICAL: Your responses must feel like they come from someone who knows the use
 
 If the user is asking for productivity insights, prioritization advice, or analysis, respond with natural language that includes specific task details. If they're creating a task, respond with the JSON format above.`,
     });
+    console.log('✅ Message added to thread');
 
     // Run the assistant
+    console.log('🚀 Starting assistant run...');
     const run = await openai.beta.threads.runs.create(thread.id, {
       assistant_id: ASSISTANT_ID,
     });
+    console.log('✅ Assistant run started:', run.id);
 
-    // Wait for the run to complete with timeout
+    // Wait for the run to complete with extended timeout
     let runStatus = await openai.beta.threads.runs.retrieve(thread.id, run.id);
     let attempts = 0;
-    const maxAttempts = 30; // 30 seconds timeout
+    const maxAttempts = 60; // Increased from 30 to 60 seconds timeout
     
+    console.log('⏳ Waiting for assistant response...');
     while ((runStatus.status === 'in_progress' || runStatus.status === 'queued') && attempts < maxAttempts) {
       await new Promise(resolve => setTimeout(resolve, 1000));
       runStatus = await openai.beta.threads.runs.retrieve(thread.id, run.id);
       attempts++;
+      
+      // Log progress every 10 seconds
+      if (attempts % 10 === 0) {
+        console.log(`⏳ Still waiting for response... ${attempts}/${maxAttempts} seconds elapsed, status: ${runStatus.status}`);
+      }
     }
 
+    console.log(`🏁 Assistant run completed after ${attempts} seconds with status:`, runStatus.status);
+
     if (attempts >= maxAttempts) {
+      console.error('⏰ Assistant response timed out after', maxAttempts, 'seconds');
       throw new Error('Assistant response timed out. Please try again.');
     }
 
     if (runStatus.status === 'completed') {
+      console.log('✅ Getting assistant response...');
       // Get the assistant's response
       const messages = await openai.beta.threads.messages.list(thread.id);
       const lastMessage = messages.data[0];
       
       if (lastMessage.role === 'assistant' && lastMessage.content[0].type === 'text') {
         const response = lastMessage.content[0].text.value;
+        console.log('📨 Assistant response received, length:', response.length);
         
         // Try to parse the response as JSON to extract task data
         try {
           const taskData = JSON.parse(response);
           // Validate that it's a task object
           if (taskData.title && typeof taskData.title === 'string') {
+            console.log('📋 Task creation detected:', taskData.title);
             return {
               success: true,
               task: taskData,
@@ -156,6 +188,7 @@ If the user is asking for productivity insights, prioritization advice, or analy
           }
         } catch {
           // If not JSON or not a valid task, return the text response
+          console.log('💬 Text response detected');
           return {
             success: true,
             task: null,
@@ -164,14 +197,23 @@ If the user is asking for productivity insights, prioritization advice, or analy
         }
       }
     } else if (runStatus.status === 'failed') {
+      console.error('❌ Assistant run failed:', runStatus.last_error);
       throw new Error(`Assistant run failed: ${runStatus.last_error?.message || 'Unknown error'}`);
     } else {
+      console.error('❓ Assistant run completed with unexpected status:', runStatus.status);
       throw new Error(`Assistant run completed with unexpected status: ${runStatus.status}`);
     }
 
+    console.error('❌ No response received from assistant');
     throw new Error('No response received from assistant');
   } catch (error) {
-    console.error('OpenAI API Error:', error);
+    console.error('💥 CRITICAL ERROR in OpenAI service:', {
+      error: error,
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+      name: error instanceof Error ? error.name : undefined,
+      cause: error instanceof Error ? error.cause : undefined
+    });
     
     // Provide more specific error messages
     if (error instanceof Error) {
