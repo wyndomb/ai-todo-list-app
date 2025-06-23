@@ -56,7 +56,7 @@ CORE RESPONSIBILITIES:
    - For "What's overdue?": List specific overdue tasks with how many days they're past due
 
 3. **TASK CREATION**: When users want to create tasks, respond with this exact JSON format:
-   ```json
+   ``\`json
    {
      "title": "Specific task title",
      "description": "Detailed description if provided",
