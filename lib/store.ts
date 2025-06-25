@@ -53,6 +53,7 @@ const supabaseRowToTask = (row: any): Task => ({
   description: row.description || undefined,
   completed: row.completed,
   createdAt: row.created_at,
+  completedAt: row.completed_at || undefined, // Map completed_at from Supabase
   dueDate: row.due_date || undefined,
   priority: row.priority,
   category: row.category || undefined,
@@ -70,6 +71,7 @@ const taskToSupabaseFormat = (task: Partial<Task>) => ({
   description: task.description || null,
   completed: task.completed,
   created_at: task.createdAt,
+  completed_at: task.completedAt || null, // Map completedAt to completed_at for Supabase
   due_date: task.dueDate || null,
   priority: task.priority,
   category: task.category || null,
@@ -328,7 +330,11 @@ export const useTodoStore = create<TodoState>()((set, get) => ({
     const task = get().tasks.find(t => t.id === id);
     if (!task) return;
     
-    const updates = { completed: !task.completed };
+    const now = new Date().toISOString();
+    const updates = { 
+      completed: !task.completed,
+      completedAt: !task.completed ? now : undefined // Set completedAt when marking as complete, clear when marking as incomplete
+    };
     
     if (!supabase) {
       // Fallback to localStorage
@@ -338,7 +344,7 @@ export const useTodoStore = create<TodoState>()((set, get) => ({
       if (!task.completed) {
         const subtasks = currentTasks.filter(t => t.parentId === id);
         updatedTasks = currentTasks.map((t) =>
-          t.parentId === id ? { ...t, completed: true } : 
+          t.parentId === id ? { ...t, completed: true, completedAt: now } : 
           t.id === id ? { ...t, ...updates } : t
         );
       } else {
@@ -374,7 +380,7 @@ export const useTodoStore = create<TodoState>()((set, get) => ({
         if (subtasks.length > 0) {
           const { error: subtaskError } = await supabase
             .from('tasks')
-            .update({ completed: true })
+            .update({ completed: true, completed_at: now })
             .in('id', subtasks.map(t => t.id));
           
           if (subtaskError) {
@@ -385,7 +391,7 @@ export const useTodoStore = create<TodoState>()((set, get) => ({
           // Update subtasks in state
           set((state) => ({
             tasks: state.tasks.map((t) =>
-              t.parentId === id ? { ...t, completed: true } : 
+              t.parentId === id ? { ...t, completed: true, completedAt: now } : 
               t.id === id ? { ...t, ...updates } : t
             ),
           }));

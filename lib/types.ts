@@ -4,6 +4,7 @@ export interface Task {
   description?: string;
   completed: boolean;
   createdAt: string;
+  completedAt?: string; // New field to track when task was completed
   dueDate?: string;
   priority: 'low' | 'medium' | 'high' | 'urgent';
   category?: string;
