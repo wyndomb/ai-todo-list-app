@@ -5,13 +5,19 @@ import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { Chrome, Sparkles, CheckCircle2, Calendar, BarChart3 } from 'lucide-react';
+import { Chrome, Sparkles, CheckCircle2, Calendar, BarChart3, AlertCircle } from 'lucide-react';
 
 export default function LoginPage() {
   const router = useRouter();
   const { toast } = useToast();
 
   useEffect(() => {
+    // Check if supabase client is available
+    if (!supabase) {
+      console.warn('Supabase client not initialized. Please check your environment variables.');
+      return;
+    }
+
     // Check if user is already logged in
     const checkUser = async () => {
       const { data: { session } } = await supabase.auth.getSession();
@@ -42,6 +48,15 @@ export default function LoginPage() {
   }, [router, toast]);
 
   const handleGoogleSignIn = async () => {
+    if (!supabase) {
+      toast({
+        title: "Configuration Error",
+        description: "Supabase is not properly configured. Please check your environment variables.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
@@ -71,6 +86,36 @@ export default function LoginPage() {
       });
     }
   };
+
+  // Show configuration warning if Supabase is not available
+  if (!supabase) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-900 dark:to-gray-800">
+        <div className="w-full max-w-md px-6">
+          <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-2xl border border-gray-100 dark:border-gray-800 p-8 text-center">
+            <div className="w-16 h-16 bg-gradient-to-r from-orange-500 to-red-500 rounded-2xl flex items-center justify-center mx-auto mb-4">
+              <AlertCircle className="h-8 w-8 text-white" />
+            </div>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">
+              Configuration Required
+            </h1>
+            <p className="text-gray-600 dark:text-gray-400 mb-6">
+              Supabase environment variables are not configured. Please set up your environment variables to continue.
+            </p>
+            <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-4 text-left">
+              <p className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-2">
+                Required environment variables:
+              </p>
+              <ul className="text-xs text-gray-600 dark:text-gray-400 space-y-1">
+                <li>• NEXT_PUBLIC_SUPABASE_URL</li>
+                <li>• NEXT_PUBLIC_SUPABASE_ANON_KEY</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-900 dark:to-gray-800">
