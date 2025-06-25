@@ -100,8 +100,70 @@ interface TaskSummary {
     categoryBalance: Record<string, number>;
   };
 
+  // Enhanced productivity data (for enhanced productivity_summary intent)
+  historicalData?: {
+    last30Days: DailyProductivityPoint[];
+    weeklyTrends: WeeklyProductivityPoint[];
+    monthlyComparisons: MonthlyComparison[];
+    bestPerformancePeriod: string;
+    productivityCurve: "improving" | "declining" | "stable" | "fluctuating";
+  };
+  productivityPatterns?: {
+    mostProductiveDay: string;
+    mostProductiveTimeFrame: string;
+    completionVelocity: number;
+    procrastinationPattern: {
+      averageDelayDays: number;
+      mostDelayedCategory: string;
+    };
+    consistencyScore: number;
+  };
+  categoryInsights?: {
+    mostImproved: string;
+    needsAttention: string[];
+    balanceScore: number;
+    categoryTrends: Record<string, "up" | "down" | "stable">;
+  };
+  performanceMetrics?: {
+    personalBest: {
+      dailyRecord: number;
+      weeklyRecord: number;
+      longestStreak: number;
+    };
+    recentImprovement: {
+      comparedToLastMonth: number;
+      improvementAreas: string[];
+    };
+  };
+
   // General data (for general queries)
   // These are included when we need broader context
+}
+
+// Supporting type definitions for enhanced productivity summary
+interface DailyProductivityPoint {
+  date: string;
+  completed: number;
+  created: number;
+  completionRate: number;
+  categories: Record<string, number>;
+}
+
+interface WeeklyProductivityPoint {
+  weekStart: string;
+  totalCompleted: number;
+  dailyAverage: number;
+  bestDay: string;
+  worstDay: string;
+  consistency: number;
+}
+
+interface MonthlyComparison {
+  month: string;
+  completed: number;
+  completionRate: number;
+  changeFromPrevious: number;
+  topCategories: string[];
 }
 
 type UserIntent =
@@ -232,16 +294,35 @@ export function AIAssistantPanel({ open, onClose }: AIAssistantPanelProps) {
       return "upcoming_summary";
     }
 
-    // Productivity analysis intent
+    // Enhanced productivity analysis intent - Supporting trend analysis
     if (
       lowerInput.includes("productivity") ||
       lowerInput.includes("performance") ||
       lowerInput.includes("how am i doing") ||
       lowerInput.includes("progress") ||
-      lowerInput.includes("week") ||
-      lowerInput.includes("month") ||
       lowerInput.includes("completion rate") ||
-      lowerInput.includes("streak")
+      (lowerInput.includes("week") && !lowerInput.includes("due")) ||
+      (lowerInput.includes("month") && !lowerInput.includes("due")) ||
+      lowerInput.includes("trends") ||
+      lowerInput.includes("patterns") ||
+      lowerInput.includes("how was last week") ||
+      lowerInput.includes("how's this week") ||
+      lowerInput.includes("monthly overview") ||
+      lowerInput.includes("am i getting better") ||
+      lowerInput.includes("show me my trends") ||
+      lowerInput.includes("productivity report") ||
+      lowerInput.includes("when am i most productive") ||
+      lowerInput.includes("which day is best") ||
+      lowerInput.includes("how consistent am i") ||
+      lowerInput.includes("what's my personal best") ||
+      lowerInput.includes("compare to last month") ||
+      lowerInput.includes("which categories need work") ||
+      lowerInput.includes("what should i improve") ||
+      lowerInput.includes("show me my records") ||
+      lowerInput.includes("track my improvement") ||
+      (lowerInput.includes("how") &&
+        lowerInput.includes("vs") &&
+        lowerInput.includes("week"))
     ) {
       return "productivity_summary";
     }
@@ -414,12 +495,356 @@ export function AIAssistantPanel({ open, onClose }: AIAssistantPanelProps) {
       }
 
       case "productivity_summary": {
-        const tasksByCategory = tasks.reduce((acc, task) => {
+        // === STEP 2: Historical Data Processing ===
+
+        // Generate 30-day historical data
+        const last30Days: DailyProductivityPoint[] = Array.from(
+          { length: 30 },
+          (_, i) => {
+            const date = new Date();
+            date.setDate(date.getDate() - i);
+            const dateStr = date.toISOString().split("T")[0];
+
+            const dayTasks = tasks.filter(
+              (t) => t.createdAt && t.createdAt.startsWith(dateStr)
+            );
+            const dayCompleted = tasks.filter(
+              (t) =>
+                t.completed &&
+                t.completedAt &&
+                t.completedAt.startsWith(dateStr)
+            );
+            const dayCategories = dayCompleted.reduce((acc, task) => {
+              const category = task.category || "No Category";
+              acc[category] = (acc[category] || 0) + 1;
+              return acc;
+            }, {} as Record<string, number>);
+
+            return {
+              date: dateStr,
+              completed: dayCompleted.length,
+              created: dayTasks.length,
+              completionRate:
+                dayTasks.length > 0
+                  ? Math.round((dayCompleted.length / dayTasks.length) * 100)
+                  : 0,
+              categories: dayCategories,
+            };
+          }
+        ).reverse(); // Oldest to newest
+
+        // Generate weekly trends (last 4 weeks)
+        const weeklyTrends: WeeklyProductivityPoint[] = [];
+        for (let i = 3; i >= 0; i--) {
+          const weekStart = new Date();
+          weekStart.setDate(weekStart.getDate() - i * 7 - 6);
+          const weekEnd = new Date();
+          weekEnd.setDate(weekEnd.getDate() - i * 7);
+
+          const weekStartStr = weekStart.toISOString().split("T")[0];
+          const weekEndStr = weekEnd.toISOString().split("T")[0];
+
+          const weekDays = last30Days.filter(
+            (day) => day.date >= weekStartStr && day.date <= weekEndStr
+          );
+          const totalCompleted = weekDays.reduce(
+            (sum, day) => sum + day.completed,
+            0
+          );
+          const dailyAverage =
+            weekDays.length > 0
+              ? Math.round((totalCompleted / weekDays.length) * 10) / 10
+              : 0;
+
+          const bestDay = weekDays.reduce(
+            (best, current) =>
+              current.completed > best.completed ? current : best,
+            weekDays[0] || { completed: 0, date: "" }
+          );
+          const worstDay = weekDays.reduce(
+            (worst, current) =>
+              current.completed < worst.completed ? current : worst,
+            weekDays[0] || { completed: 0, date: "" }
+          );
+
+          // Calculate consistency (how close daily values are to average)
+          const variance =
+            weekDays.reduce(
+              (sum, day) => sum + Math.pow(day.completed - dailyAverage, 2),
+              0
+            ) / weekDays.length;
+          const consistency = Math.max(
+            0,
+            Math.round(100 - Math.sqrt(variance) * 10)
+          );
+
+          weeklyTrends.push({
+            weekStart: weekStartStr,
+            totalCompleted,
+            dailyAverage,
+            bestDay: bestDay.date,
+            worstDay: worstDay.date,
+            consistency,
+          });
+        }
+
+        // Generate monthly comparisons (last 3 months)
+        const monthlyComparisons: MonthlyComparison[] = [];
+        for (let i = 2; i >= 0; i--) {
+          const monthStart = new Date();
+          monthStart.setMonth(monthStart.getMonth() - i, 1);
+          const monthEnd = new Date();
+          monthEnd.setMonth(monthEnd.getMonth() - i + 1, 0);
+
+          const monthStartStr = monthStart.toISOString().split("T")[0];
+          const monthEndStr = monthEnd.toISOString().split("T")[0];
+
+          const monthTasks = tasks.filter(
+            (t) =>
+              t.completed &&
+              t.completedAt &&
+              t.completedAt >= monthStartStr &&
+              t.completedAt <= monthEndStr
+          );
+
+          const topCategories = Object.entries(
+            monthTasks.reduce((acc, task) => {
+              const category = task.category || "No Category";
+              acc[category] = (acc[category] || 0) + 1;
+              return acc;
+            }, {} as Record<string, number>)
+          )
+            .sort(([, a], [, b]) => b - a)
+            .slice(0, 3)
+            .map(([cat]) => cat);
+
+          const previousMonth =
+            i === 2
+              ? 0
+              : monthlyComparisons[monthlyComparisons.length - 1]?.completed ||
+                0;
+
+          monthlyComparisons.push({
+            month: monthStart.toLocaleDateString("en-US", {
+              month: "long",
+              year: "numeric",
+            }),
+            completed: monthTasks.length,
+            completionRate:
+              baseSummary.totalTasks && baseSummary.totalTasks > 0
+                ? Math.round((monthTasks.length / baseSummary.totalTasks) * 100)
+                : 0,
+            changeFromPrevious:
+              previousMonth > 0
+                ? Math.round(
+                    ((monthTasks.length - previousMonth) / previousMonth) * 100
+                  )
+                : 0,
+            topCategories,
+          });
+        }
+
+        // Determine productivity curve
+        const recentWeeks = weeklyTrends.slice(-3);
+        let productivityCurve:
+          | "improving"
+          | "declining"
+          | "stable"
+          | "fluctuating" = "stable";
+        if (recentWeeks.length >= 2) {
+          const trend =
+            recentWeeks[recentWeeks.length - 1].totalCompleted -
+            recentWeeks[0].totalCompleted;
+          const variation =
+            Math.max(...recentWeeks.map((w) => w.totalCompleted)) -
+            Math.min(...recentWeeks.map((w) => w.totalCompleted));
+
+          if (Math.abs(trend) < 2 && variation < 5)
+            productivityCurve = "stable";
+          else if (trend > 2) productivityCurve = "improving";
+          else if (trend < -2) productivityCurve = "declining";
+          else productivityCurve = "fluctuating";
+        }
+
+        // === STEP 3: Pattern Recognition Engine ===
+
+        // Find most productive day of week
+        const dayCompletions = last30Days.reduce((acc, day) => {
+          const dayOfWeek = new Date(day.date).toLocaleDateString("en-US", {
+            weekday: "long",
+          });
+          acc[dayOfWeek] = (acc[dayOfWeek] || 0) + day.completed;
+          return acc;
+        }, {} as Record<string, number>);
+
+        const mostProductiveDay =
+          Object.entries(dayCompletions).sort(
+            ([, a], [, b]) => b - a
+          )[0]?.[0] || "Monday";
+
+        // Calculate completion velocity (tasks per day trending)
+        const recentDays = last30Days.slice(-7);
+        const earlierDays = last30Days.slice(-14, -7);
+        const recentAvg =
+          recentDays.reduce((sum, day) => sum + day.completed, 0) /
+          recentDays.length;
+        const earlierAvg =
+          earlierDays.reduce((sum, day) => sum + day.completed, 0) /
+          earlierDays.length;
+        const completionVelocity =
+          Math.round((recentAvg - earlierAvg) * 10) / 10;
+
+        // Calculate procrastination patterns
+        const overdueTasks = tasks.filter(
+          (t) => t.dueDate && t.dueDate < today && !t.completed
+        );
+        const completedDelayedTasks = tasks.filter(
+          (t) =>
+            t.completed &&
+            t.dueDate &&
+            t.completedAt &&
+            t.completedAt.split("T")[0] > t.dueDate
+        );
+
+        const averageDelayDays =
+          completedDelayedTasks.length > 0
+            ? Math.round(
+                completedDelayedTasks.reduce((sum, task) => {
+                  const dueDate = new Date(task.dueDate!);
+                  const completedDate = new Date(task.completedAt!);
+                  return (
+                    sum +
+                    Math.max(
+                      0,
+                      (completedDate.getTime() - dueDate.getTime()) /
+                        (1000 * 60 * 60 * 24)
+                    )
+                  );
+                }, 0) / completedDelayedTasks.length
+              )
+            : 0;
+
+        const delayByCategory = completedDelayedTasks.reduce((acc, task) => {
           const category = task.category || "No Category";
           acc[category] = (acc[category] || 0) + 1;
           return acc;
         }, {} as Record<string, number>);
 
+        const mostDelayedCategory =
+          Object.entries(delayByCategory).sort(
+            ([, a], [, b]) => b - a
+          )[0]?.[0] || "No Category";
+
+        // Calculate consistency score
+        const consistencyScore =
+          weeklyTrends.length > 0
+            ? Math.round(
+                weeklyTrends.reduce((sum, week) => sum + week.consistency, 0) /
+                  weeklyTrends.length
+              )
+            : 0;
+
+        // === STEP 4: Category Intelligence ===
+
+        const currentCategories = tasks.reduce((acc, task) => {
+          const category = task.category || "No Category";
+          acc[category] = (acc[category] || 0) + 1;
+          return acc;
+        }, {} as Record<string, number>);
+
+        // Compare with previous month to find trends
+        const lastMonthTasks = tasks.filter((t) => {
+          const taskDate = new Date(t.createdAt);
+          const lastMonth = new Date();
+          lastMonth.setMonth(lastMonth.getMonth() - 1);
+          return taskDate.getMonth() === lastMonth.getMonth();
+        });
+
+        const lastMonthCategories = lastMonthTasks.reduce((acc, task) => {
+          const category = task.category || "No Category";
+          acc[category] = (acc[category] || 0) + 1;
+          return acc;
+        }, {} as Record<string, number>);
+
+        // Determine category trends and insights
+        const categoryTrends: Record<string, "up" | "down" | "stable"> = {};
+        const improvementData: Array<{ category: string; change: number }> = [];
+
+        Object.keys(currentCategories).forEach((category) => {
+          const current = currentCategories[category] || 0;
+          const previous = lastMonthCategories[category] || 0;
+          const change = current - previous;
+
+          if (Math.abs(change) <= 1) categoryTrends[category] = "stable";
+          else if (change > 1) {
+            categoryTrends[category] = "up";
+            improvementData.push({ category, change });
+          } else {
+            categoryTrends[category] = "down";
+          }
+        });
+
+        const mostImproved =
+          improvementData.length > 0
+            ? improvementData.sort((a, b) => b.change - a.change)[0].category
+            : Object.keys(currentCategories)[0] || "No Category";
+
+        const needsAttention = Object.entries(categoryTrends)
+          .filter(([, trend]) => trend === "down")
+          .map(([category]) => category)
+          .slice(0, 3);
+
+        // Calculate balance score (how evenly distributed tasks are across categories)
+        const categoryValues = Object.values(currentCategories);
+        const totalTasksForBalance = categoryValues.reduce(
+          (sum, count) => sum + count,
+          0
+        );
+        const idealPerCategory = totalTasksForBalance / categoryValues.length;
+        const variance =
+          categoryValues.reduce(
+            (sum, count) => sum + Math.pow(count - idealPerCategory, 2),
+            0
+          ) / categoryValues.length;
+        const balanceScore = Math.max(
+          0,
+          Math.round(100 - (Math.sqrt(variance) / idealPerCategory) * 20)
+        );
+
+        // === STEP 5: Performance Metrics ===
+
+        // Calculate personal bests
+        const dailyRecord = Math.max(
+          ...last30Days.map((day) => day.completed),
+          0
+        );
+        const weeklyRecord = Math.max(
+          ...weeklyTrends.map((week) => week.totalCompleted),
+          0
+        );
+        const longestStreak = streak; // We already calculate this in baseSummary
+
+        // Calculate improvement vs last month
+        const thisMonthCompleted =
+          monthlyComparisons[monthlyComparisons.length - 1]?.completed || 0;
+        const lastMonthCompleted =
+          monthlyComparisons[monthlyComparisons.length - 2]?.completed || 0;
+        const comparedToLastMonth =
+          lastMonthCompleted > 0
+            ? Math.round(
+                ((thisMonthCompleted - lastMonthCompleted) /
+                  lastMonthCompleted) *
+                  100
+              )
+            : 0;
+
+        const improvementAreas =
+          needsAttention.length > 0
+            ? needsAttention
+            : ["Consistency", "Daily average", "Category balance"].slice(0, 2);
+
+        // === Original Basic Data (for backward compatibility) ===
+        const tasksByCategory = currentCategories;
         const recentCompletionsArray = tasks
           .filter((t) => t.completed && t.completedAt)
           .sort(
@@ -427,30 +852,63 @@ export function AIAssistantPanel({ open, onClose }: AIAssistantPanelProps) {
               new Date(b.completedAt!).getTime() -
               new Date(a.completedAt!).getTime()
           )
-          .slice(0, MAX_RECENT_COMPLETIONS); // LIMIT: Only show recent completions
+          .slice(0, MAX_RECENT_COMPLETIONS);
 
-        const last7Days = Array.from({ length: 7 }, (_, i) => {
-          const date = new Date();
-          date.setDate(date.getDate() - i);
-          return date.toISOString().split("T")[0];
-        });
-
-        const tasksLast7Days = last7Days.reduce((total, date) => {
-          return (
-            total + tasks.filter((t) => t.createdAt.startsWith(date)).length
-          );
-        }, 0);
-
-        const avgTasksPerDay = Math.round((tasksLast7Days / 7) * 10) / 10;
+        const avgTasksPerDay =
+          recentDays.reduce((sum, day) => sum + day.completed, 0) /
+          recentDays.length;
         const mostProductiveTime =
           completedTasks > 5 ? "Morning (9-11 AM)" : undefined;
 
         return {
           ...baseSummary,
+          // Original basic data
           tasksByCategory,
           recentCompletions: recentCompletionsArray.map(taskToDetail),
-          avgTasksPerDay,
+          avgTasksPerDay: Math.round(avgTasksPerDay * 10) / 10,
           mostProductiveTime,
+          // Enhanced productivity data
+          historicalData: {
+            last30Days: last30Days.slice(-10), // Limit to prevent token overflow
+            weeklyTrends,
+            monthlyComparisons,
+            bestPerformancePeriod:
+              weeklyTrends.length > 0
+                ? weeklyTrends.reduce((best, current) =>
+                    current.totalCompleted > best.totalCompleted
+                      ? current
+                      : best
+                  ).weekStart
+                : today,
+            productivityCurve,
+          },
+          productivityPatterns: {
+            mostProductiveDay,
+            mostProductiveTimeFrame: mostProductiveTime || "Morning",
+            completionVelocity,
+            procrastinationPattern: {
+              averageDelayDays,
+              mostDelayedCategory,
+            },
+            consistencyScore,
+          },
+          categoryInsights: {
+            mostImproved,
+            needsAttention,
+            balanceScore,
+            categoryTrends,
+          },
+          performanceMetrics: {
+            personalBest: {
+              dailyRecord,
+              weeklyRecord,
+              longestStreak,
+            },
+            recentImprovement: {
+              comparedToLastMonth,
+              improvementAreas,
+            },
+          },
         };
       }
 
@@ -1085,6 +1543,182 @@ export function AIAssistantPanel({ open, onClose }: AIAssistantPanelProps) {
 
         return response;
       }
+    }
+
+    // Enhanced Productivity Analysis - Comprehensive trends and insights
+    if (
+      lowerInput.includes("productivity") ||
+      lowerInput.includes("trends") ||
+      lowerInput.includes("patterns") ||
+      lowerInput.includes("how was last week") ||
+      lowerInput.includes("how's this week") ||
+      lowerInput.includes("monthly overview") ||
+      lowerInput.includes("am i getting better") ||
+      lowerInput.includes("show me my trends") ||
+      lowerInput.includes("productivity report") ||
+      lowerInput.includes("when am i most productive") ||
+      lowerInput.includes("which day is best") ||
+      lowerInput.includes("how consistent am i") ||
+      lowerInput.includes("what's my personal best") ||
+      lowerInput.includes("compare to last month") ||
+      lowerInput.includes("which categories need work") ||
+      lowerInput.includes("what should i improve") ||
+      lowerInput.includes("show me my records") ||
+      lowerInput.includes("track my improvement")
+    ) {
+      let response = `📊 **Enhanced Productivity Analysis**\n\n`;
+
+      // Performance Overview
+      if (summary.performanceMetrics) {
+        const { personalBest, recentImprovement } = summary.performanceMetrics;
+        response += `🏆 **Performance Highlights:**\n`;
+        response += `• Best single day: ${personalBest.dailyRecord} tasks\n`;
+        response += `• Best week ever: ${personalBest.weeklyRecord} tasks\n`;
+        response += `• Longest streak: ${personalBest.longestStreak} days\n`;
+
+        if (recentImprovement.comparedToLastMonth !== 0) {
+          const trend =
+            recentImprovement.comparedToLastMonth > 0 ? "up" : "down";
+          const emoji = trend === "up" ? "📈" : "📉";
+          response += `${emoji} vs Last Month: ${Math.abs(
+            recentImprovement.comparedToLastMonth
+          )}% ${trend}\n`;
+        }
+        response += `\n`;
+      }
+
+      // Productivity Curve & Trends
+      if (summary.historicalData) {
+        const { productivityCurve, weeklyTrends, monthlyComparisons } =
+          summary.historicalData;
+
+        response += `📈 **Trend Analysis:**\n`;
+        const curveEmoji =
+          {
+            improving: "🚀",
+            declining: "📉",
+            stable: "📊",
+            fluctuating: "🔄",
+          }[productivityCurve] || "📊";
+
+        const curveText =
+          {
+            improving: "Improving steadily",
+            declining: "Needs attention",
+            stable: "Consistent performance",
+            fluctuating: "Variable performance",
+          }[productivityCurve] || "Stable";
+
+        response += `${curveEmoji} **Overall Trajectory:** ${curveText}\n`;
+
+        if (weeklyTrends.length >= 2) {
+          const lastWeek = weeklyTrends[weeklyTrends.length - 1];
+          const prevWeek = weeklyTrends[weeklyTrends.length - 2];
+          const weekChange = lastWeek.totalCompleted - prevWeek.totalCompleted;
+
+          response += `📅 **This Week vs Last:** ${
+            weekChange >= 0 ? "+" : ""
+          }${weekChange} tasks`;
+          response += ` (${lastWeek.dailyAverage}/day average)\n`;
+        }
+
+        if (monthlyComparisons.length >= 2) {
+          const thisMonth = monthlyComparisons[monthlyComparisons.length - 1];
+          response += `📆 **${thisMonth.month}:** ${thisMonth.completed} tasks completed`;
+          if (thisMonth.changeFromPrevious !== 0) {
+            response += ` (${thisMonth.changeFromPrevious > 0 ? "+" : ""}${
+              thisMonth.changeFromPrevious
+            }%)`;
+          }
+          response += `\n`;
+        }
+        response += `\n`;
+      }
+
+      // Pattern Recognition
+      if (summary.productivityPatterns) {
+        const {
+          mostProductiveDay,
+          consistencyScore,
+          completionVelocity,
+          procrastinationPattern,
+        } = summary.productivityPatterns;
+
+        response += `🎯 **Pattern Insights:**\n`;
+        response += `• **Most Productive Day:** ${mostProductiveDay}\n`;
+        response += `• **Consistency Score:** ${consistencyScore}% `;
+
+        if (consistencyScore >= 80) response += "(Excellent! 🌟)\n";
+        else if (consistencyScore >= 60) response += "(Good 👍)\n";
+        else response += "(Room for improvement 💪)\n";
+
+        if (completionVelocity !== 0) {
+          const velocityEmoji = completionVelocity > 0 ? "⚡" : "🔄";
+          response += `${velocityEmoji} **Velocity Trend:** ${
+            completionVelocity > 0 ? "+" : ""
+          }${completionVelocity} tasks/day\n`;
+        }
+
+        if (procrastinationPattern.averageDelayDays > 0) {
+          response += `⏰ **Procrastination Pattern:** ${procrastinationPattern.averageDelayDays} day avg delay`;
+          response += ` (${procrastinationPattern.mostDelayedCategory} needs attention)\n`;
+        }
+        response += `\n`;
+      }
+
+      // Category Intelligence
+      if (summary.categoryInsights) {
+        const { mostImproved, needsAttention, balanceScore, categoryTrends } =
+          summary.categoryInsights;
+
+        response += `📋 **Category Intelligence:**\n`;
+        response += `🏆 **Most Improved:** ${mostImproved}\n`;
+
+        if (needsAttention.length > 0) {
+          response += `⚠️ **Needs Attention:** ${needsAttention.join(", ")}\n`;
+        }
+
+        response += `⚖️ **Balance Score:** ${balanceScore}% `;
+        if (balanceScore >= 80) response += "(Well-balanced! 🎯)\n";
+        else if (balanceScore >= 60) response += "(Fairly balanced 👌)\n";
+        else response += "(Consider diversifying 🔄)\n";
+
+        const trendingUp = Object.entries(categoryTrends).filter(
+          ([, trend]) => trend === "up"
+        );
+        if (trendingUp.length > 0) {
+          response += `📈 **Growing:** ${trendingUp
+            .map(([cat]) => cat)
+            .join(", ")}\n`;
+        }
+        response += `\n`;
+      }
+
+      // Smart Recommendations
+      response += `💡 **Smart Recommendations:**\n`;
+
+      if (summary.productivityPatterns?.mostProductiveDay) {
+        response += `• Schedule important tasks on ${summary.productivityPatterns.mostProductiveDay}s\n`;
+      }
+
+      if (
+        summary.productivityPatterns?.consistencyScore &&
+        summary.productivityPatterns.consistencyScore < 70
+      ) {
+        response += `• Focus on building consistent daily habits\n`;
+      }
+
+      if (summary.categoryInsights?.needsAttention.length) {
+        response += `• Dedicate more time to: ${summary.categoryInsights.needsAttention[0]}\n`;
+      }
+
+      if (summary.historicalData?.productivityCurve === "declining") {
+        response += `• Consider reviewing your task load and priorities\n`;
+      } else if (summary.historicalData?.productivityCurve === "improving") {
+        response += `• Keep up the momentum - you're on the right track! 🚀\n`;
+      }
+
+      return response;
     }
 
     // Motivation & streak analysis - Enhanced with achievements

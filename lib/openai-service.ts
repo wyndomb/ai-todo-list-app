@@ -251,10 +251,22 @@ If the user is asking for productivity insights, prioritization advice, or analy
               message: "Task created successfully with AI assistance!",
             };
           }
-          // If JSON but not a valid task, treat as text response
+          // If JSON but not a valid task, extract the actual response content
           console.log(
-            "💬 JSON response but not a valid task, treating as text"
+            "💬 JSON response but not a valid task, extracting content"
           );
+
+          // Check if it's a wrapped response (e.g., {"response": "actual content"})
+          if (taskData.response && typeof taskData.response === "string") {
+            console.log("📤 Extracted response content from JSON wrapper");
+            return {
+              success: true,
+              task: null,
+              message: taskData.response,
+            };
+          }
+
+          // If it's JSON but not in expected format, return as text
           return {
             success: true,
             task: null,
