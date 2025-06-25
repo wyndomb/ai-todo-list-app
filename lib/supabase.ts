@@ -49,6 +49,7 @@ export interface Database {
           ai_generated: boolean | null;
           ai_suggestions: string[] | null;
           parent_id: string | null;
+          sort_order: number;
         };
         Insert: {
           id?: string;
@@ -63,6 +64,7 @@ export interface Database {
           ai_generated?: boolean | null;
           ai_suggestions?: string[] | null;
           parent_id?: string | null;
+          sort_order?: number;
         };
         Update: {
           id?: string;
@@ -77,6 +79,7 @@ export interface Database {
           ai_generated?: boolean | null;
           ai_suggestions?: string[] | null;
           parent_id?: string | null;
+          sort_order?: number;
         };
       };
     };
