@@ -18,9 +18,12 @@ export default function LoginPage() {
       return;
     }
 
+    // Create a non-null reference for TypeScript
+    const currentSupabase = supabase;
+
     // Check if user is already logged in
     const checkUser = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data: { session } } = await currentSupabase.auth.getSession();
       if (session) {
         router.push('/');
       }
@@ -29,7 +32,7 @@ export default function LoginPage() {
     checkUser();
 
     // Listen for auth state changes
-    const { data: authListener } = supabase.auth.onAuthStateChange(
+    const { data: authListener } = currentSupabase.auth.onAuthStateChange(
       async (event, session) => {
         if (event === 'SIGNED_IN' && session) {
           // User is logged in, redirect to dashboard
