@@ -33,14 +33,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    // Get initial session
+    // Get initial session - moved inside useEffect to ensure supabase is non-null
     const getInitialSession = async () => {
-      // Double-check supabase is not null before using it
-      if (!supabase) {
-        setLoading(false);
-        return;
-      }
-
       try {
         const { data: { session }, error } = await supabase.auth.getSession();
         if (error) {
