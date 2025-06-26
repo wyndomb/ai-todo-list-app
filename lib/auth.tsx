@@ -28,7 +28,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const { toast } = useToast();
 
   useEffect(() => {
+    // Early return if supabase is not configured
     if (!supabase) {
+      console.warn('Supabase is not configured. Authentication features will be disabled.');
       setLoading(false);
       return;
     }
