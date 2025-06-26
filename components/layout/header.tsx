@@ -3,12 +3,12 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { ModeToggle } from '@/components/theme-toggle';
+import { UserMenu } from '@/components/layout/user-menu';
 import { 
   Plus, 
   Search, 
   Sparkles, 
   Bell, 
-  User,
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { useTodoStore } from '@/lib/store';
@@ -102,7 +102,7 @@ export function Header() {
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon" className="rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200">
-                <User className="h-5 w-5" />
+                <Sparkles className="h-5 w-5 text-purple-500" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="rounded-xl border-gray-200/50 dark:border-gray-700/50 shadow-lg">
@@ -113,6 +113,8 @@ export function Header() {
               <ModeToggle />
             </DropdownMenuContent>
           </DropdownMenu>
+
+          <UserMenu />
         </div>
       </div>
 

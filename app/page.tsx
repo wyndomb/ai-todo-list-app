@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from 'react';
+import { AuthGuard } from '@/components/auth/auth-guard';
 import { MainLayout } from '@/components/layout/main-layout';
 import { useTodoStore } from '@/lib/store';
 
@@ -13,5 +14,9 @@ export default function Home() {
     fetchCategories();
   }, [fetchTasks, fetchCategories]);
 
-  return <MainLayout />;
+  return (
+    <AuthGuard>
+      <MainLayout />
+    </AuthGuard>
+  );
 }

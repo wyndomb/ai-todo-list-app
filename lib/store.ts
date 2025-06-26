@@ -46,6 +46,13 @@ interface TodoState {
   clearFilters: () => void;
 }
 
+// Helper function to get current user ID
+const getCurrentUserId = async () => {
+  if (!supabase) return null;
+  const { data: { user } } = await supabase.auth.getUser();
+  return user?.id || null;
+};
+
 // Helper function to convert Supabase row to Task
 const supabaseRowToTask = (row: any): Task => ({
   id: row.id,
@@ -53,7 +60,7 @@ const supabaseRowToTask = (row: any): Task => ({
   description: row.description || undefined,
   completed: row.completed,
   createdAt: row.created_at,
-  completedAt: row.completed_at || undefined, // Map completed_at from Supabase
+  completedAt: row.completed_at || undefined,
   dueDate: row.due_date || undefined,
   priority: row.priority,
   category: row.category || undefined,
@@ -65,13 +72,13 @@ const supabaseRowToTask = (row: any): Task => ({
 });
 
 // Helper function to convert Task to Supabase insert/update format
-const taskToSupabaseFormat = (task: Partial<Task>) => ({
+const taskToSupabaseFormat = (task: Partial<Task>, userId?: string) => ({
   id: task.id,
   title: task.title,
   description: task.description || null,
   completed: task.completed,
   created_at: task.createdAt,
-  completed_at: task.completedAt || null, // Map completedAt to completed_at for Supabase
+  completed_at: task.completedAt || null,
   due_date: task.dueDate || null,
   priority: task.priority,
   category: task.category || null,
@@ -80,6 +87,7 @@ const taskToSupabaseFormat = (task: Partial<Task>) => ({
   ai_suggestions: task.aiSuggestions || null,
   parent_id: task.parentId || null,
   sort_order: task.sortOrder || 0,
+  user_id: userId,
 });
 
 // Helper function to convert Supabase row to Category
@@ -93,13 +101,13 @@ const supabaseRowToCategory = (row: any): Category => ({
 });
 
 // Helper function to convert Category to Supabase insert/update format
-const categoryToSupabaseFormat = (category: Partial<Category>) => ({
+const categoryToSupabaseFormat = (category: Partial<Category>, userId?: string) => ({
   id: category.id,
   name: category.name,
   color: category.color,
   icon: category.icon,
   created_at: category.createdAt,
-  user_id: category.userId || '00000000-0000-0000-0000-000000000000',
+  user_id: userId,
 });
 
 export const useTodoStore = create<TodoState>()((set, get) => ({
@@ -122,7 +130,6 @@ export const useTodoStore = create<TodoState>()((set, get) => ({
   fetchTasks: async () => {
     if (!supabase) {
       console.warn('Supabase not configured, using local storage fallback');
-      // Try to load from localStorage as fallback
       try {
         const stored = localStorage.getItem('todo-tasks');
         if (stored) {
@@ -140,9 +147,16 @@ export const useTodoStore = create<TodoState>()((set, get) => ({
 
     set({ isLoading: true });
     try {
+      const userId = await getCurrentUserId();
+      if (!userId) {
+        set({ isLoading: false });
+        return;
+      }
+
       const { data, error } = await supabase
         .from('tasks')
         .select('*')
+        .eq('user_id', userId)
         .order('sort_order', { ascending: true })
         .order('created_at', { ascending: false });
       
@@ -162,7 +176,6 @@ export const useTodoStore = create<TodoState>()((set, get) => ({
   fetchCategories: async () => {
     if (!supabase) {
       console.warn('Supabase not configured, using default categories');
-      // Use default categories as fallback
       const defaultCategories: Category[] = [
         { id: uuidv4(), name: 'Work', color: '#818cf8', icon: 'briefcase' },
         { id: uuidv4(), name: 'Personal', color: '#22d3ee', icon: 'user' },
@@ -175,9 +188,13 @@ export const useTodoStore = create<TodoState>()((set, get) => ({
     }
 
     try {
+      const userId = await getCurrentUserId();
+      if (!userId) return;
+
       const { data, error } = await supabase
         .from('user_categories')
         .select('*')
+        .eq('user_id', userId)
         .order('created_at', { ascending: true });
       
       if (error) {
@@ -203,7 +220,6 @@ export const useTodoStore = create<TodoState>()((set, get) => ({
       sortOrder: maxSortOrder + 1,
     };
 
-    // If it's a subtask, inherit category from parent
     if (task.parentId) {
       const parentTask = get().tasks.find(t => t.id === task.parentId);
       if (parentTask && parentTask.category) {
@@ -212,7 +228,6 @@ export const useTodoStore = create<TodoState>()((set, get) => ({
     }
     
     if (!supabase) {
-      // Fallback to localStorage
       const updatedTasks = [newTask, ...currentTasks];
       set({ tasks: updatedTasks });
       try {
@@ -224,9 +239,12 @@ export const useTodoStore = create<TodoState>()((set, get) => ({
     }
     
     try {
+      const userId = await getCurrentUserId();
+      if (!userId) return;
+
       const { error } = await supabase
         .from('tasks')
-        .insert([taskToSupabaseFormat(newTask)]);
+        .insert([taskToSupabaseFormat(newTask, userId)]);
       
       if (error) {
         console.error('Error adding task:', error);
@@ -243,7 +261,6 @@ export const useTodoStore = create<TodoState>()((set, get) => ({
   
   updateTask: async (id, updates) => {
     if (!supabase) {
-      // Fallback to localStorage
       const currentTasks = get().tasks;
       const updatedTasks = currentTasks.map((task) => 
         task.id === id ? { ...task, ...updates } : task
@@ -258,10 +275,14 @@ export const useTodoStore = create<TodoState>()((set, get) => ({
     }
 
     try {
+      const userId = await getCurrentUserId();
+      if (!userId) return;
+
       const { error } = await supabase
         .from('tasks')
-        .update(taskToSupabaseFormat(updates))
-        .eq('id', id);
+        .update(taskToSupabaseFormat(updates, userId))
+        .eq('id', id)
+        .eq('user_id', userId);
       
       if (error) {
         console.error('Error updating task:', error);
@@ -280,7 +301,6 @@ export const useTodoStore = create<TodoState>()((set, get) => ({
   
   deleteTask: async (id) => {
     if (!supabase) {
-      // Fallback to localStorage
       const currentTasks = get().tasks;
       const updatedTasks = currentTasks.filter((task) => task.id !== id && task.parentId !== id);
       set({ tasks: updatedTasks });
@@ -293,13 +313,16 @@ export const useTodoStore = create<TodoState>()((set, get) => ({
     }
 
     try {
-      // First, delete all subtasks
+      const userId = await getCurrentUserId();
+      if (!userId) return;
+
       const subtasks = get().tasks.filter(task => task.parentId === id);
       if (subtasks.length > 0) {
         const { error: subtaskError } = await supabase
           .from('tasks')
           .delete()
-          .in('id', subtasks.map(t => t.id));
+          .in('id', subtasks.map(t => t.id))
+          .eq('user_id', userId);
         
         if (subtaskError) {
           console.error('Error deleting subtasks:', subtaskError);
@@ -307,11 +330,11 @@ export const useTodoStore = create<TodoState>()((set, get) => ({
         }
       }
       
-      // Then delete the main task
       const { error } = await supabase
         .from('tasks')
         .delete()
-        .eq('id', id);
+        .eq('id', id)
+        .eq('user_id', userId);
       
       if (error) {
         console.error('Error deleting task:', error);
@@ -333,11 +356,10 @@ export const useTodoStore = create<TodoState>()((set, get) => ({
     const now = new Date().toISOString();
     const updates = { 
       completed: !task.completed,
-      completedAt: !task.completed ? now : undefined // Set completedAt when marking as complete, clear when marking as incomplete
+      completedAt: !task.completed ? now : undefined
     };
     
     if (!supabase) {
-      // Fallback to localStorage
       const currentTasks = get().tasks;
       let updatedTasks;
       
@@ -363,32 +385,34 @@ export const useTodoStore = create<TodoState>()((set, get) => ({
     }
     
     try {
-      // Update the main task
+      const userId = await getCurrentUserId();
+      if (!userId) return;
+
       const { error } = await supabase
         .from('tasks')
-        .update(taskToSupabaseFormat(updates))
-        .eq('id', id);
+        .update(taskToSupabaseFormat(updates, userId))
+        .eq('id', id)
+        .eq('user_id', userId);
       
       if (error) {
         console.error('Error toggling task completion:', error);
         return;
       }
       
-      // If completing a parent task, complete all subtasks
       if (!task.completed) {
         const subtasks = get().tasks.filter(t => t.parentId === id);
         if (subtasks.length > 0) {
           const { error: subtaskError } = await supabase
             .from('tasks')
             .update({ completed: true, completed_at: now })
-            .in('id', subtasks.map(t => t.id));
+            .in('id', subtasks.map(t => t.id))
+            .eq('user_id', userId);
           
           if (subtaskError) {
             console.error('Error completing subtasks:', subtaskError);
             return;
           }
           
-          // Update subtasks in state
           set((state) => ({
             tasks: state.tasks.map((t) =>
               t.parentId === id ? { ...t, completed: true, completedAt: now } : 
@@ -396,7 +420,6 @@ export const useTodoStore = create<TodoState>()((set, get) => ({
             ),
           }));
         } else {
-          // No subtasks, just update the main task
           set((state) => ({
             tasks: state.tasks.map((t) =>
               t.id === id ? { ...t, ...updates } : t
@@ -404,7 +427,6 @@ export const useTodoStore = create<TodoState>()((set, get) => ({
           }));
         }
       } else {
-        // Just update the main task
         set((state) => ({
           tasks: state.tasks.map((t) =>
             t.id === id ? { ...t, ...updates } : t
@@ -418,7 +440,6 @@ export const useTodoStore = create<TodoState>()((set, get) => ({
   
   clearTasks: async () => {
     if (!supabase) {
-      // Fallback to localStorage
       set({
         tasks: [],
         filterBy: {
@@ -437,10 +458,13 @@ export const useTodoStore = create<TodoState>()((set, get) => ({
     }
 
     try {
+      const userId = await getCurrentUserId();
+      if (!userId) return;
+
       const { error } = await supabase
         .from('tasks')
         .delete()
-        .neq('id', '00000000-0000-0000-0000-000000000000'); // Delete all tasks
+        .eq('user_id', userId);
       
       if (error) {
         console.error('Error clearing tasks:', error);
@@ -464,22 +488,18 @@ export const useTodoStore = create<TodoState>()((set, get) => ({
   reorderTasks: async (taskIds, startIndex, endIndex) => {
     const currentTasks = get().tasks;
     
-    // Create a new array with the reordered tasks
     const reorderedTasks = [...currentTasks];
     const [movedTask] = reorderedTasks.splice(startIndex, 1);
     reorderedTasks.splice(endIndex, 0, movedTask);
     
-    // Update sort orders
     const updatedTasks = reorderedTasks.map((task, index) => ({
       ...task,
       sortOrder: index,
     }));
     
-    // Update state immediately for responsive UI
     set({ tasks: updatedTasks });
     
     if (!supabase) {
-      // Fallback to localStorage
       try {
         localStorage.setItem('todo-tasks', JSON.stringify(updatedTasks));
       } catch (error) {
@@ -489,26 +509,26 @@ export const useTodoStore = create<TodoState>()((set, get) => ({
     }
     
     try {
-      // Batch update sort orders in database
+      const userId = await getCurrentUserId();
+      if (!userId) return;
+
       const updates = updatedTasks.map(task => ({
         id: task.id,
         sort_order: task.sortOrder,
+        user_id: userId,
       }));
       
-      // Use upsert to update sort orders
       const { error } = await supabase
         .from('tasks')
         .upsert(updates, { onConflict: 'id' });
       
       if (error) {
         console.error('Error updating task order:', error);
-        // Revert state on error
         set({ tasks: currentTasks });
         return;
       }
     } catch (error) {
       console.error('Error updating task order:', error);
-      // Revert state on error
       set({ tasks: currentTasks });
     }
   },
@@ -518,13 +538,11 @@ export const useTodoStore = create<TodoState>()((set, get) => ({
       ...category,
       id: uuidv4(),
       createdAt: new Date().toISOString(),
-      // Ensure default values are set
       color: category.color || '#6b7280',
       icon: category.icon || 'folder',
     };
 
     if (!supabase) {
-      // Fallback to in-memory storage
       set((state) => ({
         categories: [...state.categories, newCategory],
       }));
@@ -532,9 +550,12 @@ export const useTodoStore = create<TodoState>()((set, get) => ({
     }
 
     try {
+      const userId = await getCurrentUserId();
+      if (!userId) return;
+
       const { error } = await supabase
         .from('user_categories')
-        .insert([categoryToSupabaseFormat(newCategory)]);
+        .insert([categoryToSupabaseFormat(newCategory, userId)]);
       
       if (error) {
         console.error('Error adding category:', error);
@@ -551,7 +572,6 @@ export const useTodoStore = create<TodoState>()((set, get) => ({
   
   updateCategory: async (id, updates) => {
     if (!supabase) {
-      // Fallback to in-memory storage
       set((state) => ({
         categories: state.categories.map((category) =>
           category.id === id ? { ...category, ...updates } : category
@@ -561,10 +581,14 @@ export const useTodoStore = create<TodoState>()((set, get) => ({
     }
 
     try {
+      const userId = await getCurrentUserId();
+      if (!userId) return;
+
       const { error } = await supabase
         .from('user_categories')
-        .update(categoryToSupabaseFormat(updates))
-        .eq('id', id);
+        .update(categoryToSupabaseFormat(updates, userId))
+        .eq('id', id)
+        .eq('user_id', userId);
       
       if (error) {
         console.error('Error updating category:', error);
@@ -586,7 +610,6 @@ export const useTodoStore = create<TodoState>()((set, get) => ({
     if (!categoryToDelete) return;
 
     if (!supabase) {
-      // Fallback to in-memory storage
       set((state) => ({
         categories: state.categories.filter((category) => category.id !== id),
         tasks: state.tasks.map((task) =>
@@ -597,13 +620,16 @@ export const useTodoStore = create<TodoState>()((set, get) => ({
     }
 
     try {
-      // First, update all tasks that use this category to have no category
+      const userId = await getCurrentUserId();
+      if (!userId) return;
+
       const tasksWithCategory = get().tasks.filter(task => task.category === categoryToDelete.name);
       if (tasksWithCategory.length > 0) {
         const { error: taskUpdateError } = await supabase
           .from('tasks')
           .update({ category: null })
-          .in('id', tasksWithCategory.map(t => t.id));
+          .in('id', tasksWithCategory.map(t => t.id))
+          .eq('user_id', userId);
         
         if (taskUpdateError) {
           console.error('Error updating tasks when deleting category:', taskUpdateError);
@@ -611,11 +637,11 @@ export const useTodoStore = create<TodoState>()((set, get) => ({
         }
       }
 
-      // Then delete the category
       const { error } = await supabase
         .from('user_categories')
         .delete()
-        .eq('id', id);
+        .eq('id', id)
+        .eq('user_id', userId);
       
       if (error) {
         console.error('Error deleting category:', error);
@@ -655,14 +681,11 @@ export const useTodoStore = create<TodoState>()((set, get) => ({
   generateSuggestions: async () => {
     const state = get();
     
-    // Fetch latest tasks to ensure we have current data
     await state.fetchTasks();
     
     const completedTasks = state.tasks.filter(task => task.completed);
     
-    // A simple "AI" function that suggests tasks based on patterns
     if (completedTasks.length > 0) {
-      // Generate a sample insight based on completed tasks
       const mostCommonCategory = getMostCommonValue(completedTasks.map(t => t.category));
       
       if (mostCommonCategory) {
@@ -675,7 +698,6 @@ export const useTodoStore = create<TodoState>()((set, get) => ({
         });
       }
       
-      // Generate a sample task suggestion
       if (completedTasks.length >= 3) {
         const randomCompletedTask = completedTasks[Math.floor(Math.random() * completedTasks.length)];
         const suggestedTitle = `Follow up on: ${randomCompletedTask.title}`;
@@ -711,7 +733,6 @@ export const useTodoStore = create<TodoState>()((set, get) => ({
   }),
 }));
 
-// Helper function to get the most common value in an array
 function getMostCommonValue<T>(arr: (T | undefined)[]): T | undefined {
   const filtered = arr.filter(Boolean) as T[];
   if (filtered.length === 0) return undefined;
