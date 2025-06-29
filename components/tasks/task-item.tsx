@@ -115,11 +115,11 @@ export function TaskItem({ task, isDragging = false }: TaskItemProps) {
     <>
       <div
         className={cn(
-          "relative flex items-center gap-3 p-3 border-b border-gray-200 dark:border-gray-800 transition-colors duration-200",
+          "relative flex items-center gap-3 p-3 border-b border-stone-600/20 dark:border-stone-600/20 transition-colors duration-200",
           !isDragging &&
-            "cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50",
+            "cursor-pointer hover:bg-stone-100/50 dark:hover:bg-stone-600/20",
           task.completed && "opacity-50",
-          "w-full max-w-none bg-white dark:bg-gray-900",
+          "w-full max-w-none",
           isDragging && "pointer-events-none"
         )}
         onClick={!isDragging ? () => setShowDetailDialog(true) : undefined}

@@ -322,9 +322,9 @@ export function MainLayout() {
   );
 
   return (
-    <div className="flex min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="flex min-h-screen bg-stone-50 dark:bg-stone-900">
       {/* Desktop Sidebar */}
-      <div className="hidden lg:block fixed left-0 top-0 bottom-0 z-40 w-64 bg-gray-900 text-gray-100 shadow-xl">
+      <div className="hidden lg:block fixed left-0 top-0 bottom-0 z-40 w-64 bg-zinc-900 text-gray-100 shadow-xl">
         <SidebarContent />
       </div>
 
@@ -334,7 +334,6 @@ export function MainLayout() {
         <main className="flex-1 container mx-auto p-4 lg:p-6 max-w-none">
           <div className="animate-fade-in">{renderActiveView()}</div>
         </main>
-        <Footer />
         <AIAssistantPanel
           open={aiPanelOpen}
           onClose={() => setAiPanelOpen(false)}

@@ -41,7 +41,7 @@ export function Dashboard() {
 
       {/* Compact Progress Stats */}
       <div className="grid grid-cols-3 gap-3 md:gap-4">
-        <Card className="aspect-square md:aspect-auto bg-gray-50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-800">
+        <Card className="aspect-square md:aspect-auto bg-stone-50 dark:bg-stone-900/50 border-stone-200 dark:border-stone-600">
           <CardContent className="p-3 md:p-4 h-full flex flex-col items-center justify-center">
             <div className="text-xs md:text-sm text-gray-500 dark:text-gray-400 mb-1">
               Progress
@@ -52,7 +52,7 @@ export function Dashboard() {
           </CardContent>
         </Card>
 
-        <Card className="aspect-square md:aspect-auto bg-gray-50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-800">
+        <Card className="aspect-square md:aspect-auto bg-stone-50 dark:bg-stone-900/50 border-stone-200 dark:border-stone-600">
           <CardContent className="p-3 md:p-4 h-full flex flex-col items-center justify-center">
             <div className="text-xs md:text-sm text-gray-500 dark:text-gray-400 mb-1">
               Completed
@@ -63,7 +63,7 @@ export function Dashboard() {
           </CardContent>
         </Card>
 
-        <Card className="aspect-square md:aspect-auto bg-gray-50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-800">
+        <Card className="aspect-square md:aspect-auto bg-stone-50 dark:bg-stone-900/50 border-stone-200 dark:border-stone-600">
           <CardContent className="p-3 md:p-4 h-full flex flex-col items-center justify-center">
             <div className="text-xs md:text-sm text-gray-500 dark:text-gray-400 mb-1">
               Remaining
