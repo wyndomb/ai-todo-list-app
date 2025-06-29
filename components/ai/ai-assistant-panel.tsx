@@ -180,8 +180,16 @@ export function AIAssistantPanel({ open, onClose }: AIAssistantPanelProps) {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: uuidv4(),
-      content:
-        'Hi there! ✨ I\'m your AI productivity coach. I can help you manage tasks, analyze your productivity patterns, and provide personalized insights. Try asking me:\n\n• "What did I accomplish today?"\n• "What\'s coming up?"\n• "What should I prioritize?"\n• "How\'s my streak?"\n• "Motivate me!"\n• "How\'s my productivity this week?"\n• "Add a task to review quarterly reports"\n\nHow can I help you today?',
+      content: `Hi there! ✨ I'm your AI productivity coach. I can help you manage tasks, analyze your productivity patterns, and provide personalized insights. Try asking me:
+
+- "What did I accomplish today?"
+- "What's coming up?"
+- "What should I prioritize?"
+- "How's my streak?"
+- "Motivate me!"
+- "How's my productivity this week?"
+
+How can I help you today?`,
       sender: "assistant",
       timestamp: new Date().toISOString(),
     },

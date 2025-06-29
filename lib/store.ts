@@ -1,9 +1,10 @@
 "use client";
 
-import { create } from 'zustand';
-import { v4 as uuidv4 } from 'uuid';
-import { Task, Category, Tag, AIInsight } from '@/lib/types';
-import { supabase } from '@/lib/supabase';
+import { create } from "zustand";
+import { v4 as uuidv4 } from "uuid";
+import { arrayMove } from "@dnd-kit/sortable";
+import { Task, Category, Tag, AIInsight } from "@/lib/types";
+import { supabase } from "@/lib/supabase";
 
 interface TodoState {
   tasks: Task[];
@@ -17,39 +18,52 @@ interface TodoState {
     completed: boolean | null;
     search: string;
   };
-  
+  viewDate: Date | null;
+
   // Task actions
   fetchTasks: () => Promise<void>;
-  addTask: (task: Omit<Task, 'id' | 'createdAt'>) => Promise<void>;
-  updateTask: (id: string, updates: Partial<Omit<Task, 'id'>>) => Promise<void>;
+  addTask: (task: Omit<Task, "id" | "createdAt">) => Promise<void>;
+  updateTask: (id: string, updates: Partial<Omit<Task, "id">>) => Promise<void>;
   deleteTask: (id: string) => Promise<void>;
   toggleTaskCompletion: (id: string) => Promise<void>;
   clearTasks: () => Promise<void>;
-  reorderTasks: (taskIds: string[], startIndex: number, endIndex: number) => Promise<void>;
-  
+  reorderTasks: (
+    taskIds: string[],
+    startIndex: number,
+    endIndex: number
+  ) => Promise<void>;
+
   // Category actions
   fetchCategories: () => Promise<void>;
-  addCategory: (category: Omit<Category, 'id' | 'createdAt'>) => Promise<void>;
-  updateCategory: (id: string, updates: Partial<Omit<Category, 'id'>>) => Promise<void>;
+  addCategory: (category: Omit<Category, "id" | "createdAt">) => Promise<void>;
+  updateCategory: (
+    id: string,
+    updates: Partial<Omit<Category, "id">>
+  ) => Promise<void>;
   deleteCategory: (id: string) => Promise<void>;
-  
+
   // Tag actions
-  addTag: (tag: Omit<Tag, 'id'>) => void;
+  addTag: (tag: Omit<Tag, "id">) => void;
   deleteTag: (id: string) => void;
-  
+
   // AI related actions
-  addInsight: (insight: Omit<AIInsight, 'id' | 'timestamp'>) => void;
+  addInsight: (insight: Omit<AIInsight, "id" | "timestamp">) => void;
   generateSuggestions: () => void;
-  
+
   // Filter actions
-  setFilter: (filter: Partial<TodoState['filterBy']>) => void;
+  setFilter: (filter: Partial<TodoState["filterBy"]>) => void;
   clearFilters: () => void;
+
+  // ViewDate actions
+  setViewDate: (date: Date | null) => void;
 }
 
 // Helper function to get current user ID
 const getCurrentUserId = async () => {
   if (!supabase) return null;
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   return user?.id || null;
 };
 
@@ -101,7 +115,10 @@ const supabaseRowToCategory = (row: any): Category => ({
 });
 
 // Helper function to convert Category to Supabase insert/update format
-const categoryToSupabaseFormat = (category: Partial<Category>, userId?: string) => ({
+const categoryToSupabaseFormat = (
+  category: Partial<Category>,
+  userId?: string
+) => ({
   id: category.id,
   name: category.name,
   color: category.color,
@@ -114,9 +131,9 @@ export const useTodoStore = create<TodoState>()((set, get) => ({
   tasks: [],
   categories: [],
   tags: [
-    { id: uuidv4(), name: 'Important' },
-    { id: uuidv4(), name: 'Urgent' },
-    { id: uuidv4(), name: 'Later' },
+    { id: uuidv4(), name: "Important" },
+    { id: uuidv4(), name: "Urgent" },
+    { id: uuidv4(), name: "Later" },
   ],
   insights: [],
   isLoading: false,
@@ -124,14 +141,15 @@ export const useTodoStore = create<TodoState>()((set, get) => ({
     category: null,
     priority: null,
     completed: null,
-    search: '',
+    search: "",
   },
-  
+  viewDate: null,
+
   fetchTasks: async () => {
     if (!supabase) {
-      console.warn('Supabase not configured, using local storage fallback');
+      console.warn("Supabase not configured, using local storage fallback");
       try {
-        const stored = localStorage.getItem('todo-tasks');
+        const stored = localStorage.getItem("todo-tasks");
         if (stored) {
           const tasks = JSON.parse(stored);
           set({ tasks, isLoading: false });
@@ -139,7 +157,7 @@ export const useTodoStore = create<TodoState>()((set, get) => ({
           set({ isLoading: false });
         }
       } catch (error) {
-        console.error('Error loading from localStorage:', error);
+        console.error("Error loading from localStorage:", error);
         set({ isLoading: false });
       }
       return;
@@ -148,40 +166,122 @@ export const useTodoStore = create<TodoState>()((set, get) => ({
     set({ isLoading: true });
     try {
       const userId = await getCurrentUserId();
-      if (!userId) {
-        set({ isLoading: false });
+
+      // Try to fetch tasks with user_id first (if authenticated)
+      let query = supabase.from("tasks").select("*");
+
+      if (userId) {
+        query = query.eq("user_id", userId);
+      }
+
+      const { data, error } = await query
+        .order("sort_order", { ascending: true })
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        console.error("Error fetching tasks:", error);
+
+        // If there's an error (like missing user_id column), try fallback without user filtering
+        if (error.message.includes("user_id") || error.code === "42703") {
+          console.warn("Attempting fallback query without user_id filter...");
+          try {
+            const { data: fallbackData, error: fallbackError } = await supabase
+              .from("tasks")
+              .select("*")
+              .order("sort_order", { ascending: true })
+              .order("created_at", { ascending: false });
+
+            if (fallbackError) {
+              console.error("Fallback query also failed:", fallbackError);
+              // Use localStorage as final fallback
+              const stored = localStorage.getItem("todo-tasks");
+              if (stored) {
+                const tasks = JSON.parse(stored);
+                set({ tasks, isLoading: false });
+              } else {
+                set({ tasks: [], isLoading: false });
+              }
+              return;
+            }
+
+            const tasks = fallbackData?.map(supabaseRowToTask) || [];
+            set({ tasks, isLoading: false });
+            return;
+          } catch (fallbackError) {
+            console.error("Fallback query failed:", fallbackError);
+            set({ tasks: [], isLoading: false });
+            return;
+          }
+        }
+
+        set({ tasks: [], isLoading: false });
         return;
       }
 
-      const { data, error } = await supabase
-        .from('tasks')
-        .select('*')
-        .eq('user_id', userId)
-        .order('sort_order', { ascending: true })
-        .order('created_at', { ascending: false });
-      
-      if (error) {
-        console.error('Error fetching tasks:', error);
-        return;
-      }
-      
       const tasks = data?.map(supabaseRowToTask) || [];
       set({ tasks, isLoading: false });
     } catch (error) {
-      console.error('Error fetching tasks:', error);
-      set({ isLoading: false });
+      console.error("Error fetching tasks:", error);
+      // Use localStorage as final fallback
+      try {
+        const stored = localStorage.getItem("todo-tasks");
+        if (stored) {
+          const tasks = JSON.parse(stored);
+          set({ tasks, isLoading: false });
+        } else {
+          set({ tasks: [], isLoading: false });
+        }
+      } catch (storageError) {
+        console.error("Error loading from localStorage:", storageError);
+        set({ tasks: [], isLoading: false });
+      }
     }
   },
 
   fetchCategories: async () => {
     if (!supabase) {
-      console.warn('Supabase not configured, using default categories');
+      console.warn("Supabase not configured, using default categories");
       const defaultCategories: Category[] = [
-        { id: uuidv4(), name: 'Work', color: '#818cf8', icon: 'briefcase' },
-        { id: uuidv4(), name: 'Personal', color: '#22d3ee', icon: 'user' },
-        { id: uuidv4(), name: 'Health', color: '#22c55e', icon: 'heart' },
-        { id: uuidv4(), name: 'Finance', color: '#eab308', icon: 'dollar-sign' },
-        { id: uuidv4(), name: 'Education', color: '#ec4899', icon: 'book-open' },
+        {
+          id: uuidv4(),
+          name: "Work",
+          color: "#818cf8",
+          icon: "briefcase",
+          createdAt: new Date().toISOString(),
+          userId: "default",
+        },
+        {
+          id: uuidv4(),
+          name: "Personal",
+          color: "#22d3ee",
+          icon: "user",
+          createdAt: new Date().toISOString(),
+          userId: "default",
+        },
+        {
+          id: uuidv4(),
+          name: "Health",
+          color: "#22c55e",
+          icon: "heart",
+          createdAt: new Date().toISOString(),
+          userId: "default",
+        },
+        {
+          id: uuidv4(),
+          name: "Finance",
+          color: "#eab308",
+          icon: "dollar-sign",
+          createdAt: new Date().toISOString(),
+          userId: "default",
+        },
+        {
+          id: uuidv4(),
+          name: "Education",
+          color: "#ec4899",
+          icon: "book-open",
+          createdAt: new Date().toISOString(),
+          userId: "default",
+        },
       ];
       set({ categories: defaultCategories });
       return;
@@ -189,30 +289,185 @@ export const useTodoStore = create<TodoState>()((set, get) => ({
 
     try {
       const userId = await getCurrentUserId();
-      if (!userId) return;
 
-      const { data, error } = await supabase
-        .from('user_categories')
-        .select('*')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: true });
-      
+      // Try to fetch categories with user_id first (if authenticated)
+      let query = supabase.from("user_categories").select("*");
+
+      if (userId) {
+        query = query.eq("user_id", userId);
+      }
+
+      const { data, error } = await query.order("created_at", {
+        ascending: true,
+      });
+
       if (error) {
-        console.error('Error fetching categories:', error);
+        console.error("Error fetching categories:", error);
+
+        // If there's an error (like missing user_id column or RLS), use default categories
+        if (
+          error.message.includes("user_id") ||
+          error.code === "42703" ||
+          error.code === "42501"
+        ) {
+          console.warn(
+            "Using default categories due to database access issues"
+          );
+          const defaultCategories: Category[] = [
+            {
+              id: uuidv4(),
+              name: "Work",
+              color: "#818cf8",
+              icon: "briefcase",
+              createdAt: new Date().toISOString(),
+              userId: "default",
+            },
+            {
+              id: uuidv4(),
+              name: "Personal",
+              color: "#22d3ee",
+              icon: "user",
+              createdAt: new Date().toISOString(),
+              userId: "default",
+            },
+            {
+              id: uuidv4(),
+              name: "Health",
+              color: "#22c55e",
+              icon: "heart",
+              createdAt: new Date().toISOString(),
+              userId: "default",
+            },
+            {
+              id: uuidv4(),
+              name: "Finance",
+              color: "#eab308",
+              icon: "dollar-sign",
+              createdAt: new Date().toISOString(),
+              userId: "default",
+            },
+            {
+              id: uuidv4(),
+              name: "Education",
+              color: "#ec4899",
+              icon: "book-open",
+              createdAt: new Date().toISOString(),
+              userId: "default",
+            },
+          ];
+          set({ categories: defaultCategories });
+          return;
+        }
         return;
       }
-      
+
       const categories = data?.map(supabaseRowToCategory) || [];
+
+      // If no categories found, provide default ones
+      if (categories.length === 0) {
+        const defaultCategories: Category[] = [
+          {
+            id: uuidv4(),
+            name: "Work",
+            color: "#818cf8",
+            icon: "briefcase",
+            createdAt: new Date().toISOString(),
+            userId: userId || "default",
+          },
+          {
+            id: uuidv4(),
+            name: "Personal",
+            color: "#22d3ee",
+            icon: "user",
+            createdAt: new Date().toISOString(),
+            userId: userId || "default",
+          },
+          {
+            id: uuidv4(),
+            name: "Health",
+            color: "#22c55e",
+            icon: "heart",
+            createdAt: new Date().toISOString(),
+            userId: userId || "default",
+          },
+          {
+            id: uuidv4(),
+            name: "Finance",
+            color: "#eab308",
+            icon: "dollar-sign",
+            createdAt: new Date().toISOString(),
+            userId: userId || "default",
+          },
+          {
+            id: uuidv4(),
+            name: "Education",
+            color: "#ec4899",
+            icon: "book-open",
+            createdAt: new Date().toISOString(),
+            userId: userId || "default",
+          },
+        ];
+        set({ categories: defaultCategories });
+        return;
+      }
+
       set({ categories });
     } catch (error) {
-      console.error('Error fetching categories:', error);
+      console.error("Error fetching categories:", error);
+      // Use default categories as final fallback
+      const defaultCategories: Category[] = [
+        {
+          id: uuidv4(),
+          name: "Work",
+          color: "#818cf8",
+          icon: "briefcase",
+          createdAt: new Date().toISOString(),
+          userId: "default",
+        },
+        {
+          id: uuidv4(),
+          name: "Personal",
+          color: "#22d3ee",
+          icon: "user",
+          createdAt: new Date().toISOString(),
+          userId: "default",
+        },
+        {
+          id: uuidv4(),
+          name: "Health",
+          color: "#22c55e",
+          icon: "heart",
+          createdAt: new Date().toISOString(),
+          userId: "default",
+        },
+        {
+          id: uuidv4(),
+          name: "Finance",
+          color: "#eab308",
+          icon: "dollar-sign",
+          createdAt: new Date().toISOString(),
+          userId: "default",
+        },
+        {
+          id: uuidv4(),
+          name: "Education",
+          color: "#ec4899",
+          icon: "book-open",
+          createdAt: new Date().toISOString(),
+          userId: "default",
+        },
+      ];
+      set({ categories: defaultCategories });
     }
   },
-  
+
   addTask: async (task) => {
     const currentTasks = get().tasks;
-    const maxSortOrder = Math.max(...currentTasks.map(t => t.sortOrder || 0), 0);
-    
+    const maxSortOrder = Math.max(
+      ...currentTasks.map((t) => t.sortOrder || 0),
+      0
+    );
+
     const newTask: Task = {
       ...task,
       id: uuidv4(),
@@ -221,223 +476,264 @@ export const useTodoStore = create<TodoState>()((set, get) => ({
     };
 
     if (task.parentId) {
-      const parentTask = get().tasks.find(t => t.id === task.parentId);
+      const parentTask = get().tasks.find((t) => t.id === task.parentId);
       if (parentTask && parentTask.category) {
         newTask.category = parentTask.category;
       }
     }
-    
-    if (!supabase) {
-      const updatedTasks = [newTask, ...currentTasks];
-      set({ tasks: updatedTasks });
-      try {
-        localStorage.setItem('todo-tasks', JSON.stringify(updatedTasks));
-      } catch (error) {
-        console.error('Error saving to localStorage:', error);
-      }
-      return;
-    }
-    
-    try {
-      const userId = await getCurrentUserId();
-      if (!userId) return;
 
-      const { error } = await supabase
-        .from('tasks')
-        .insert([taskToSupabaseFormat(newTask, userId)]);
-      
-      if (error) {
-        console.error('Error adding task:', error);
-        return;
-      }
-      
-      set((state) => ({
-        tasks: [newTask, ...state.tasks],
-      }));
-    } catch (error) {
-      console.error('Error adding task:', error);
-    }
-  },
-  
-  updateTask: async (id, updates) => {
+    // Optimistic update
+    set((state) => ({ tasks: [newTask, ...state.tasks] }));
+
     if (!supabase) {
-      const currentTasks = get().tasks;
-      const updatedTasks = currentTasks.map((task) => 
-        task.id === id ? { ...task, ...updates } : task
-      );
-      set({ tasks: updatedTasks });
       try {
-        localStorage.setItem('todo-tasks', JSON.stringify(updatedTasks));
+        localStorage.setItem("todo-tasks", JSON.stringify(get().tasks));
       } catch (error) {
-        console.error('Error saving to localStorage:', error);
+        console.error("Error saving to localStorage:", error);
       }
       return;
     }
 
     try {
       const userId = await getCurrentUserId();
-      if (!userId) return;
-
-      const { error } = await supabase
-        .from('tasks')
-        .update(taskToSupabaseFormat(updates, userId))
-        .eq('id', id)
-        .eq('user_id', userId);
-      
-      if (error) {
-        console.error('Error updating task:', error);
+      if (!userId) {
+        console.error("No user ID found, cannot save to database");
         return;
       }
-      
-      set((state) => ({
-        tasks: state.tasks.map((task) => 
-          task.id === id ? { ...task, ...updates } : task
-        ),
-      }));
-    } catch (error) {
-      console.error('Error updating task:', error);
-    }
-  },
-  
-  deleteTask: async (id) => {
-    if (!supabase) {
-      const currentTasks = get().tasks;
-      const updatedTasks = currentTasks.filter((task) => task.id !== id && task.parentId !== id);
-      set({ tasks: updatedTasks });
-      try {
-        localStorage.setItem('todo-tasks', JSON.stringify(updatedTasks));
-      } catch (error) {
-        console.error('Error saving to localStorage:', error);
-      }
-      return;
-    }
-
-    try {
-      const userId = await getCurrentUserId();
-      if (!userId) return;
-
-      const subtasks = get().tasks.filter(task => task.parentId === id);
-      if (subtasks.length > 0) {
-        const { error: subtaskError } = await supabase
-          .from('tasks')
-          .delete()
-          .in('id', subtasks.map(t => t.id))
-          .eq('user_id', userId);
-        
-        if (subtaskError) {
-          console.error('Error deleting subtasks:', subtaskError);
-          return;
-        }
-      }
-      
-      const { error } = await supabase
-        .from('tasks')
-        .delete()
-        .eq('id', id)
-        .eq('user_id', userId);
-      
-      if (error) {
-        console.error('Error deleting task:', error);
-        return;
-      }
-      
-      set((state) => ({
-        tasks: state.tasks.filter((task) => task.id !== id && task.parentId !== id),
-      }));
-    } catch (error) {
-      console.error('Error deleting task:', error);
-    }
-  },
-  
-  toggleTaskCompletion: async (id) => {
-    const task = get().tasks.find(t => t.id === id);
-    if (!task) return;
-    
-    const now = new Date().toISOString();
-    const updates = { 
-      completed: !task.completed,
-      completedAt: !task.completed ? now : undefined
-    };
-    
-    if (!supabase) {
-      const currentTasks = get().tasks;
-      let updatedTasks;
-      
-      if (!task.completed) {
-        const subtasks = currentTasks.filter(t => t.parentId === id);
-        updatedTasks = currentTasks.map((t) =>
-          t.parentId === id ? { ...t, completed: true, completedAt: now } : 
-          t.id === id ? { ...t, ...updates } : t
-        );
-      } else {
-        updatedTasks = currentTasks.map((t) =>
-          t.id === id ? { ...t, ...updates } : t
-        );
-      }
-      
-      set({ tasks: updatedTasks });
-      try {
-        localStorage.setItem('todo-tasks', JSON.stringify(updatedTasks));
-      } catch (error) {
-        console.error('Error saving to localStorage:', error);
-      }
-      return;
-    }
-    
-    try {
-      const userId = await getCurrentUserId();
-      if (!userId) return;
 
       const { error } = await supabase
-        .from('tasks')
-        .update(taskToSupabaseFormat(updates, userId))
-        .eq('id', id)
-        .eq('user_id', userId);
-      
+        .from("tasks")
+        .insert(taskToSupabaseFormat(newTask, userId));
+
       if (error) {
-        console.error('Error toggling task completion:', error);
-        return;
-      }
-      
-      if (!task.completed) {
-        const subtasks = get().tasks.filter(t => t.parentId === id);
-        if (subtasks.length > 0) {
-          const { error: subtaskError } = await supabase
-            .from('tasks')
-            .update({ completed: true, completed_at: now })
-            .in('id', subtasks.map(t => t.id))
-            .eq('user_id', userId);
-          
-          if (subtaskError) {
-            console.error('Error completing subtasks:', subtaskError);
-            return;
-          }
-          
-          set((state) => ({
-            tasks: state.tasks.map((t) =>
-              t.parentId === id ? { ...t, completed: true, completedAt: now } : 
-              t.id === id ? { ...t, ...updates } : t
-            ),
-          }));
-        } else {
-          set((state) => ({
-            tasks: state.tasks.map((t) =>
-              t.id === id ? { ...t, ...updates } : t
-            ),
-          }));
-        }
-      } else {
+        console.error("Error adding task:", error);
+        // Revert optimistic update
         set((state) => ({
-          tasks: state.tasks.map((t) =>
-            t.id === id ? { ...t, ...updates } : t
-          ),
+          tasks: state.tasks.filter((t) => t.id !== newTask.id),
         }));
       }
     } catch (error) {
-      console.error('Error toggling task completion:', error);
+      console.error("Error adding task:", error);
+      set((state) => ({
+        tasks: state.tasks.filter((t) => t.id !== newTask.id),
+      }));
     }
   },
-  
+
+  updateTask: async (id, updates) => {
+    const originalTasks = get().tasks;
+    const task = originalTasks.find((t) => t.id === id);
+    if (!task) return;
+
+    // Optimistic update
+    set((state) => ({
+      tasks: state.tasks.map((t) => (t.id === id ? { ...t, ...updates } : t)),
+    }));
+
+    if (!supabase) {
+      try {
+        localStorage.setItem("todo-tasks", JSON.stringify(get().tasks));
+      } catch (error) {
+        console.error("Error saving to localStorage:", error);
+      }
+      return;
+    }
+
+    try {
+      const userId = await getCurrentUserId();
+      if (!userId) {
+        console.error("No user ID found, cannot save to database");
+        return;
+      }
+
+      const { error } = await supabase
+        .from("tasks")
+        .update(taskToSupabaseFormat(updates, userId))
+        .eq("id", id)
+        .eq("user_id", userId);
+
+      if (error) {
+        console.error("Error updating task:", error);
+        // Revert optimistic update
+        set({ tasks: originalTasks });
+      }
+    } catch (error) {
+      console.error("Error updating task:", error);
+      set({ tasks: originalTasks });
+    }
+  },
+
+  deleteTask: async (id) => {
+    const originalTasks = get().tasks;
+    // Optimistic update
+    set((state) => ({
+      tasks: state.tasks.filter((t) => t.id !== id),
+    }));
+
+    if (!supabase) {
+      try {
+        localStorage.setItem("todo-tasks", JSON.stringify(get().tasks));
+      } catch (error) {
+        console.error("Error saving to localStorage:", error);
+      }
+      return;
+    }
+
+    try {
+      const userId = await getCurrentUserId();
+      if (!userId) {
+        console.error("No user ID found, cannot save to database");
+        return;
+      }
+
+      const { error } = await supabase
+        .from("tasks")
+        .delete()
+        .eq("id", id)
+        .eq("user_id", userId);
+
+      if (error) {
+        console.error("Error deleting task:", error);
+        // Revert optimistic update
+        set({ tasks: originalTasks });
+      }
+    } catch (error) {
+      console.error("Error deleting task:", error);
+      set({ tasks: originalTasks });
+    }
+  },
+
+  toggleTaskCompletion: async (id) => {
+    const task = get().tasks.find((t) => t.id === id);
+    if (!task) return;
+
+    const now = new Date().toISOString();
+    const updates = {
+      completed: !task.completed,
+      completedAt: !task.completed ? now : undefined,
+    };
+
+    // Optimistically update UI first
+    set((state) => ({
+      tasks: state.tasks.map((t) => (t.id === id ? { ...t, ...updates } : t)),
+    }));
+
+    if (!supabase) {
+      const currentTasks = get().tasks;
+      let updatedTasks;
+
+      if (!task.completed) {
+        const subtasks = currentTasks.filter((t) => t.parentId === id);
+        updatedTasks = currentTasks.map((t) =>
+          t.parentId === id
+            ? { ...t, completed: true, completedAt: now }
+            : t.id === id
+            ? { ...t, ...updates }
+            : t
+        );
+      } else {
+        updatedTasks = currentTasks.map((t) =>
+          t.id === id ? { ...t, ...updates } : t
+        );
+      }
+
+      set({ tasks: updatedTasks });
+      try {
+        localStorage.setItem("todo-tasks", JSON.stringify(updatedTasks));
+      } catch (error) {
+        console.error("Error saving to localStorage:", error);
+      }
+      return;
+    }
+
+    try {
+      const userId = await getCurrentUserId();
+      if (!userId) {
+        console.error("No user ID found, cannot save to database");
+        return;
+      }
+
+      const { error } = await supabase
+        .from("tasks")
+        .update(taskToSupabaseFormat(updates, userId))
+        .eq("id", id)
+        .eq("user_id", userId);
+
+      if (error) {
+        console.error("Error toggling task completion:", error);
+        console.error("Error details:", {
+          message: error.message,
+          code: error.code,
+          details: error.details,
+          hint: error.hint,
+        });
+        // Revert optimistic update on error
+        set((state) => ({
+          tasks: state.tasks.map((t) =>
+            t.id === id
+              ? {
+                  ...t,
+                  completed: task.completed,
+                  completedAt: task.completedAt,
+                }
+              : t
+          ),
+        }));
+        return;
+      }
+
+      // If completing a parent task, also complete its subtasks
+      if (!task.completed) {
+        const subtasks = get().tasks.filter((t) => t.parentId === id);
+        if (subtasks.length > 0) {
+          const { error: subtaskError } = await supabase
+            .from("tasks")
+            .update({ completed: true, completed_at: now })
+            .in(
+              "id",
+              subtasks.map((t) => t.id)
+            )
+            .eq("user_id", userId);
+
+          if (subtaskError) {
+            console.error("Error completing subtasks:", subtaskError);
+            console.error("Subtask error details:", {
+              message: subtaskError.message,
+              code: subtaskError.code,
+              details: subtaskError.details,
+              hint: subtaskError.hint,
+            });
+            return;
+          }
+
+          set((state) => ({
+            tasks: state.tasks.map((t) =>
+              t.parentId === id
+                ? { ...t, completed: true, completedAt: now }
+                : t.id === id
+                ? { ...t, ...updates }
+                : t
+            ),
+          }));
+        }
+      }
+    } catch (error) {
+      console.error("Error toggling task completion:", error);
+      // Revert optimistic update on error
+      set((state) => ({
+        tasks: state.tasks.map((t) =>
+          t.id === id
+            ? {
+                ...t,
+                completed: task.completed,
+                completedAt: task.completedAt,
+              }
+            : t
+        ),
+      }));
+    }
+  },
+
   clearTasks: async () => {
     if (!supabase) {
       set({
@@ -446,13 +742,13 @@ export const useTodoStore = create<TodoState>()((set, get) => ({
           category: null,
           priority: null,
           completed: null,
-          search: '',
+          search: "",
         },
       });
       try {
-        localStorage.removeItem('todo-tasks');
+        localStorage.removeItem("todo-tasks");
       } catch (error) {
-        console.error('Error clearing localStorage:', error);
+        console.error("Error clearing localStorage:", error);
       }
       return;
     }
@@ -462,285 +758,304 @@ export const useTodoStore = create<TodoState>()((set, get) => ({
       if (!userId) return;
 
       const { error } = await supabase
-        .from('tasks')
+        .from("tasks")
         .delete()
-        .eq('user_id', userId);
-      
+        .eq("user_id", userId);
+
       if (error) {
-        console.error('Error clearing tasks:', error);
+        console.error("Error clearing tasks:", error);
         return;
       }
-      
+
       set({
         tasks: [],
         filterBy: {
           category: null,
           priority: null,
           completed: null,
-          search: '',
+          search: "",
         },
       });
     } catch (error) {
-      console.error('Error clearing tasks:', error);
+      console.error("Error clearing tasks:", error);
     }
   },
 
   reorderTasks: async (taskIds, startIndex, endIndex) => {
-    const currentTasks = get().tasks;
-    
-    const reorderedTasks = [...currentTasks];
-    const [movedTask] = reorderedTasks.splice(startIndex, 1);
-    reorderedTasks.splice(endIndex, 0, movedTask);
-    
-    const updatedTasks = reorderedTasks.map((task, index) => ({
+    const originalTasks = get().tasks;
+    const reorderedTasks = arrayMove(originalTasks, startIndex, endIndex);
+
+    // Optimistic update with new sort orders
+    const updatedTasks = reorderedTasks.map((task: Task, index: number) => ({
       ...task,
       sortOrder: index,
     }));
-    
     set({ tasks: updatedTasks });
-    
+
     if (!supabase) {
       try {
-        localStorage.setItem('todo-tasks', JSON.stringify(updatedTasks));
+        localStorage.setItem("todo-tasks", JSON.stringify(updatedTasks));
       } catch (error) {
-        console.error('Error saving to localStorage:', error);
+        console.error("Error saving reordered tasks to localStorage:", error);
+        set({ tasks: originalTasks }); // Revert
       }
       return;
     }
-    
+
     try {
       const userId = await getCurrentUserId();
-      if (!userId) return;
-
-      const updates = updatedTasks.map(task => ({
+      if (!userId) {
+        console.error("No user ID, cannot save reordered tasks");
+        return;
+      }
+      // Batch update the sort order in Supabase
+      const updates = updatedTasks.map((task: Task) => ({
         id: task.id,
         sort_order: task.sortOrder,
         user_id: userId,
       }));
-      
-      const { error } = await supabase
-        .from('tasks')
-        .upsert(updates, { onConflict: 'id' });
-      
+
+      const { error } = await supabase.from("tasks").upsert(updates);
+
       if (error) {
-        console.error('Error updating task order:', error);
-        set({ tasks: currentTasks });
-        return;
+        console.error("Error saving reordered tasks:", error);
+        set({ tasks: originalTasks }); // Revert on error
       }
     } catch (error) {
-      console.error('Error updating task order:', error);
-      set({ tasks: currentTasks });
+      console.error("Error reordering tasks:", error);
+      set({ tasks: originalTasks });
     }
   },
-  
+
   addCategory: async (category) => {
     const newCategory: Category = {
       ...category,
       id: uuidv4(),
       createdAt: new Date().toISOString(),
-      color: category.color || '#6b7280',
-      icon: category.icon || 'folder',
+      color: category.color || "#6b7280",
+      icon: category.icon || "folder",
     };
 
+    set((state) => ({ categories: [...state.categories, newCategory] }));
+
     if (!supabase) {
-      set((state) => ({
-        categories: [...state.categories, newCategory],
-      }));
+      try {
+        localStorage.setItem(
+          "todo-categories",
+          JSON.stringify(get().categories)
+        );
+      } catch (error) {
+        console.error("Error saving category to localStorage:", error);
+      }
       return;
     }
 
     try {
       const userId = await getCurrentUserId();
-      if (!userId) return;
+      if (!userId) {
+        console.error("No user ID found, cannot save category");
+        return;
+      }
 
       const { error } = await supabase
-        .from('user_categories')
+        .from("user_categories")
         .insert([categoryToSupabaseFormat(newCategory, userId)]);
-      
+
       if (error) {
-        console.error('Error adding category:', error);
-        return;
+        console.error("Error adding category:", error);
+        set((state) => ({
+          categories: state.categories.filter((c) => c.id !== newCategory.id),
+        }));
       }
-      
-      set((state) => ({
-        categories: [...state.categories, newCategory],
-      }));
     } catch (error) {
-      console.error('Error adding category:', error);
+      console.error("Error adding category:", error);
+      set((state) => ({
+        categories: state.categories.filter((c) => c.id !== newCategory.id),
+      }));
     }
   },
-  
+
   updateCategory: async (id, updates) => {
+    const originalCategories = get().categories;
+    set((state) => ({
+      categories: state.categories.map((c) =>
+        c.id === id ? { ...c, ...updates } : c
+      ),
+    }));
+
     if (!supabase) {
-      set((state) => ({
-        categories: state.categories.map((category) =>
-          category.id === id ? { ...category, ...updates } : category
-        ),
-      }));
+      try {
+        localStorage.setItem(
+          "todo-categories",
+          JSON.stringify(get().categories)
+        );
+      } catch (error) {
+        console.error("Error saving category to localStorage:", error);
+      }
       return;
     }
 
     try {
       const userId = await getCurrentUserId();
-      if (!userId) return;
+      if (!userId) {
+        console.error("No user ID found, cannot update category");
+        return;
+      }
 
       const { error } = await supabase
-        .from('user_categories')
+        .from("user_categories")
         .update(categoryToSupabaseFormat(updates, userId))
-        .eq('id', id)
-        .eq('user_id', userId);
-      
+        .eq("id", id)
+        .eq("user_id", userId);
+
       if (error) {
-        console.error('Error updating category:', error);
-        return;
+        console.error("Error updating category:", error);
+        set({ categories: originalCategories });
       }
-      
-      set((state) => ({
-        categories: state.categories.map((category) =>
-          category.id === id ? { ...category, ...updates } : category
-        ),
-      }));
     } catch (error) {
-      console.error('Error updating category:', error);
+      console.error("Error updating category:", error);
+      set({ categories: originalCategories });
     }
   },
-  
+
   deleteCategory: async (id) => {
-    const categoryToDelete = get().categories.find(c => c.id === id);
-    if (!categoryToDelete) return;
+    const originalCategories = get().categories;
+    set((state) => ({
+      categories: state.categories.filter((c) => c.id !== id),
+    }));
 
     if (!supabase) {
-      set((state) => ({
-        categories: state.categories.filter((category) => category.id !== id),
-        tasks: state.tasks.map((task) =>
-          task.category === categoryToDelete.name ? { ...task, category: undefined } : task
-        ),
-      }));
+      try {
+        localStorage.setItem(
+          "todo-categories",
+          JSON.stringify(get().categories)
+        );
+      } catch (error) {
+        console.error("Error saving category to localStorage:", error);
+      }
       return;
     }
 
     try {
       const userId = await getCurrentUserId();
-      if (!userId) return;
-
-      const tasksWithCategory = get().tasks.filter(task => task.category === categoryToDelete.name);
-      if (tasksWithCategory.length > 0) {
-        const { error: taskUpdateError } = await supabase
-          .from('tasks')
-          .update({ category: null })
-          .in('id', tasksWithCategory.map(t => t.id))
-          .eq('user_id', userId);
-        
-        if (taskUpdateError) {
-          console.error('Error updating tasks when deleting category:', taskUpdateError);
-          return;
-        }
+      if (!userId) {
+        console.error("No user ID found, cannot delete category");
+        return;
       }
 
       const { error } = await supabase
-        .from('user_categories')
+        .from("user_categories")
         .delete()
-        .eq('id', id)
-        .eq('user_id', userId);
-      
+        .eq("id", id)
+        .eq("user_id", userId);
+
       if (error) {
-        console.error('Error deleting category:', error);
-        return;
+        console.error("Error deleting category:", error);
+        set({ categories: originalCategories });
       }
-      
-      set((state) => ({
-        categories: state.categories.filter((category) => category.id !== id),
-        tasks: state.tasks.map((task) =>
-          task.category === categoryToDelete.name ? { ...task, category: undefined } : task
-        ),
-      }));
     } catch (error) {
-      console.error('Error deleting category:', error);
+      console.error("Error deleting category:", error);
+      set({ categories: originalCategories });
     }
   },
-  
-  addTag: (tag) => set((state) => ({
-    tags: [...state.tags, { ...tag, id: uuidv4() }],
-  })),
-  
-  deleteTag: (id) => set((state) => ({
-    tags: state.tags.filter((tag) => tag.id !== id),
-  })),
-  
-  addInsight: (insight) => set((state) => ({
-    insights: [
-      ...state.insights,
-      {
-        ...insight,
-        id: uuidv4(),
-        timestamp: new Date().toISOString(),
-      },
-    ],
-  })),
-  
+
+  addTag: (tag) =>
+    set((state) => ({
+      tags: [...state.tags, { ...tag, id: uuidv4() }],
+    })),
+
+  deleteTag: (id) =>
+    set((state) => ({
+      tags: state.tags.filter((tag) => tag.id !== id),
+    })),
+
+  addInsight: (insight) =>
+    set((state) => ({
+      insights: [
+        ...state.insights,
+        {
+          ...insight,
+          id: uuidv4(),
+          timestamp: new Date().toISOString(),
+        },
+      ],
+    })),
+
   generateSuggestions: async () => {
     const state = get();
-    
+    // Ensure tasks are fresh before generating suggestions
     await state.fetchTasks();
-    
-    const completedTasks = state.tasks.filter(task => task.completed);
-    
+
+    const completedTasks = state.tasks.filter((task) => task.completed);
     if (completedTasks.length > 0) {
-      const mostCommonCategory = getMostCommonValue(completedTasks.map(t => t.category));
-      
+      // Suggest creating more tasks in the most common category
+      const mostCommonCategory = getMostCommonValue(
+        completedTasks.map((t) => t.category)
+      );
       if (mostCommonCategory) {
         state.addInsight({
-          type: 'suggestion',
-          content: `You've been productive with ${mostCommonCategory} tasks lately. Would you like to create more tasks in this category?`,
+          type: "suggestion",
+          content: `You've been productive with ${mostCommonCategory} tasks. Create another?`,
           relatedTasks: completedTasks
-            .filter(t => t.category === mostCommonCategory)
-            .map(t => t.id),
+            .filter((t) => t.category === mostCommonCategory)
+            .map((t) => t.id),
         });
       }
-      
+
+      // After completing 3+ tasks, suggest a follow-up for a random one
       if (completedTasks.length >= 3) {
-        const randomCompletedTask = completedTasks[Math.floor(Math.random() * completedTasks.length)];
-        const suggestedTitle = `Follow up on: ${randomCompletedTask.title}`;
-        
+        const randomCompletedTask =
+          completedTasks[Math.floor(Math.random() * completedTasks.length)];
+        const suggestedTitle = `Follow-up on: ${randomCompletedTask.title}`;
+
         await state.addTask({
           title: suggestedTitle,
-          description: 'AI suggested follow-up task',
+          description: `AI-suggested follow-up for "${randomCompletedTask.title}"`,
           completed: false,
           priority: randomCompletedTask.priority,
           category: randomCompletedTask.category,
           tags: randomCompletedTask.tags,
           aiGenerated: true,
           aiSuggestions: [
-            'Consider scheduling this as a recurring task',
-            'This might pair well with other similar tasks',
+            "Consider if this should be a recurring task.",
+            "Break this down into smaller sub-tasks.",
           ],
         });
       }
     }
   },
-  
-  setFilter: (filter) => set((state) => ({
-    filterBy: { ...state.filterBy, ...filter },
-  })),
-  
-  clearFilters: () => set({
-    filterBy: {
-      category: null,
-      priority: null,
-      completed: null,
-      search: '',
-    },
-  }),
+
+  setFilter: (filter) =>
+    set((state) => ({
+      filterBy: { ...state.filterBy, ...filter },
+    })),
+
+  clearFilters: () =>
+    set({
+      filterBy: {
+        category: null,
+        priority: null,
+        completed: null,
+        search: "",
+      },
+    }),
+
+  setViewDate: (date) => set({ viewDate: date }),
 }));
 
 function getMostCommonValue<T>(arr: (T | undefined)[]): T | undefined {
   const filtered = arr.filter(Boolean) as T[];
   if (filtered.length === 0) return undefined;
-  
-  const counts = filtered.reduce((acc, val) => {
-    acc[String(val)] = (acc[String(val)] || 0) + 1;
+
+  const counts = filtered.reduce((acc, value) => {
+    const key = String(value);
+    acc[key] = (acc[key] || 0) + 1;
     return acc;
   }, {} as Record<string, number>);
-  
-  return Object.keys(counts).reduce((a, b) => counts[a] > counts[b] ? a : b) as unknown as T;
+
+  const mostCommonKey = Object.keys(counts).reduce((a, b) =>
+    counts[a] > counts[b] ? a : b
+  );
+
+  return filtered.find((item) => String(item) === mostCommonKey);
 }

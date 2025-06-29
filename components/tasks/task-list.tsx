@@ -11,9 +11,10 @@ import { Plus } from "lucide-react";
 
 interface TaskListProps {
   tasks: Task[];
+  selectedDate?: Date;
 }
 
-export function TaskList({ tasks }: TaskListProps) {
+export function TaskList({ tasks, selectedDate }: TaskListProps) {
   const [showAddTask, setShowAddTask] = useState(false);
   const { filterBy } = useTodoStore();
 
@@ -159,7 +160,11 @@ export function TaskList({ tasks }: TaskListProps) {
         )}
       </div>
 
-      <AddTaskDialog open={showAddTask} onOpenChange={setShowAddTask} />
+      <AddTaskDialog
+        open={showAddTask}
+        onOpenChange={setShowAddTask}
+        defaultDate={selectedDate}
+      />
     </div>
   );
 }

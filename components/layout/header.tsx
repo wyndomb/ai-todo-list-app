@@ -1,31 +1,32 @@
 "use client";
 
-import { useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { ModeToggle } from '@/components/theme-toggle';
-import { UserMenu } from '@/components/layout/user-menu';
-import { 
-  Plus, 
-  Search, 
-  Sparkles, 
-  Bell, 
-} from 'lucide-react';
-import { Input } from '@/components/ui/input';
-import { useTodoStore } from '@/lib/store';
-import { useToast } from '@/hooks/use-toast';
-import { 
+import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { ModeToggle } from "@/components/theme-toggle";
+import { UserMenu } from "@/components/layout/user-menu";
+import { Plus, Search, Sparkles, Bell } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { useTodoStore } from "@/lib/store";
+import { useToast } from "@/hooks/use-toast";
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuTrigger 
-} from '@/components/ui/dropdown-menu';
-import { AddTaskDialog } from '@/components/tasks/add-task-dialog';
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { AddTaskDialog } from "@/components/tasks/add-task-dialog";
 
-export function Header() {
+export function Header({
+  onToggleAiPanel,
+  onAddTask,
+}: {
+  onToggleAiPanel?: () => void;
+  onAddTask?: () => void;
+} = {}) {
   const [isScrolled, setIsScrolled] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
   const [showAddTask, setShowAddTask] = useState(false);
-  const { setFilter, generateSuggestions } = useTodoStore();
+  const { setFilter, generateSuggestions, viewDate } = useTodoStore();
   const { toast } = useToast();
 
   useEffect(() => {
@@ -33,8 +34,8 @@ export function Header() {
       setIsScrolled(window.scrollY > 10);
     };
 
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -47,17 +48,20 @@ export function Header() {
     generateSuggestions();
     toast({
       title: "✨ AI Insights Generated",
-      description: "New task suggestions and insights have been created based on your activity.",
+      description:
+        "New task suggestions and insights have been created based on your activity.",
       duration: 3000,
     });
   };
 
   return (
-    <header className={`sticky top-0 z-30 w-full transition-all duration-300 ${
-      isScrolled 
-        ? 'bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border-b border-gray-200/50 dark:border-gray-700/50 shadow-sm' 
-        : 'bg-transparent'
-    }`}>
+    <header
+      className={`sticky top-0 z-30 w-full transition-all duration-300 ${
+        isScrolled
+          ? "bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border-b border-gray-200/50 dark:border-gray-700/50 shadow-sm"
+          : "bg-transparent"
+      }`}
+    >
       <div className="container mx-auto flex h-16 items-center justify-between px-4 lg:px-6">
         {/* Mobile: Skip search, show only essential items */}
         <div className="hidden md:block flex-1 max-w-md">
@@ -79,34 +83,41 @@ export function Header() {
             AI Todo
           </h1>
         </div>
-        
+
         <div className="flex items-center gap-2 md:gap-3">
           {/* Hide notification bell on mobile */}
-          <Button 
-            size="icon" 
-            variant="ghost" 
+          <Button
+            size="icon"
+            variant="ghost"
             className="hidden md:flex relative rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200"
           >
             <Bell className="h-5 w-5" />
             <span className="absolute -top-1 -right-1 w-3 h-3 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full animate-pulse"></span>
           </Button>
-          
-          <Button 
-            className="gap-2 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white rounded-xl shadow-md hover:shadow-lg transition-all duration-200 hover:scale-105 text-sm md:text-base px-3 md:px-4"
-            onClick={() => setShowAddTask(true)}
-          >
-            <Plus className="h-4 w-4" />
-            <span className="hidden sm:inline">New Task</span>
+
+          <Button onClick={() => setShowAddTask(true)}>
+            <Plus className="mr-2 h-4 w-4" />
+            Add Task
           </Button>
-          
+
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200"
+              >
                 <Sparkles className="h-5 w-5 text-purple-500" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="rounded-xl border-gray-200/50 dark:border-gray-700/50 shadow-lg">
-              <DropdownMenuItem onClick={handleGenerateInsights} className="rounded-lg">
+            <DropdownMenuContent
+              align="end"
+              className="rounded-xl border-gray-200/50 dark:border-gray-700/50 shadow-lg"
+            >
+              <DropdownMenuItem
+                onClick={handleGenerateInsights}
+                className="rounded-lg"
+              >
                 <Sparkles className="mr-2 h-4 w-4 text-purple-500" />
                 Generate AI Insights
               </DropdownMenuItem>
@@ -118,7 +129,11 @@ export function Header() {
         </div>
       </div>
 
-      <AddTaskDialog open={showAddTask} onOpenChange={setShowAddTask} />
+      <AddTaskDialog
+        open={showAddTask}
+        onOpenChange={setShowAddTask}
+        defaultDate={viewDate || undefined}
+      />
     </header>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { format, addDays, startOfWeek, isSameDay, isToday } from "date-fns";
 import { useTodoStore } from "@/lib/store";
 import { TaskList } from "@/components/tasks/task-list";
@@ -22,7 +22,7 @@ import { cn } from "@/lib/utils";
 import type { Task } from "@/lib/types";
 
 export function UpcomingView() {
-  const { tasks } = useTodoStore();
+  const { tasks, setViewDate } = useTodoStore();
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [weekStartDate, setWeekStartDate] = useState<Date>(
     startOfWeek(new Date(), { weekStartsOn: 1 })
@@ -63,8 +63,24 @@ export function UpcomingView() {
 
   const handleDateSelect = (date: Date) => {
     setSelectedDate(date);
+    setViewDate(date);
     setWeekStartDate(startOfWeek(date, { weekStartsOn: 1 }));
   };
+
+  useEffect(() => {
+    // Set the initial date in the store
+    setViewDate(selectedDate);
+
+    // Cleanup function to reset the date when the view is changed
+    return () => {
+      setViewDate(null);
+    };
+  }, []); // Run only on mount and unmount
+
+  // Update the store whenever selectedDate changes
+  useEffect(() => {
+    setViewDate(selectedDate);
+  }, [selectedDate, setViewDate]);
 
   return (
     <div className="space-y-4 md:space-y-6 animate-fade-in max-w-none pb-20 lg:pb-0">
@@ -150,7 +166,10 @@ export function UpcomingView() {
               return (
                 <button
                   key={dateStr}
-                  onClick={() => setSelectedDate(day)}
+                  onClick={() => {
+                    setSelectedDate(day);
+                    setViewDate(day);
+                  }}
                   className={cn(
                     "flex flex-col items-center justify-center p-2 rounded-lg transition-all duration-200 min-h-[60px]",
                     isSelected
@@ -205,7 +224,7 @@ export function UpcomingView() {
 
           <div className="w-full max-w-none">
             {selectedDateTasks.length > 0 ? (
-              <TaskList tasks={selectedDateTasks} />
+              <TaskList tasks={selectedDateTasks} selectedDate={selectedDate} />
             ) : (
               <div className="text-center py-8 md:py-12">
                 <div className="w-12 h-12 md:w-16 md:h-16 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center mx-auto mb-4">
