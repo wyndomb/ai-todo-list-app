@@ -90,7 +90,12 @@ export function TaskList({ tasks, selectedDate }: TaskListProps) {
       (!task.dueDate || new Date(task.dueDate) > addDays(new Date(), 7))
   );
 
-  const completedTasks = parentTasks.filter((task) => task.completed);
+  const completedTasks = parentTasks.filter(
+    (task) =>
+      task.completed &&
+      task.completedAt &&
+      task.completedAt.split("T")[0] === today
+  );
 
   // Sort tasks by sortOrder for drag and drop
   const sortTasksByOrder = (taskList: Task[]) => {

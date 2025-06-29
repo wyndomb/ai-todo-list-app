@@ -91,15 +91,15 @@ export function SortableTaskList({
   }
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-1">
       {title && (
-        <div className="flex items-center gap-2 px-1">
+        <div className="flex items-center gap-2 px-1 pt-4 pb-2">
           {emoji && <span className="text-lg">{emoji}</span>}
-          <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">
+          <h3 className="text-base font-semibold text-gray-800 dark:text-gray-200">
             {title}
           </h3>
-          <span className="text-xs font-normal text-gray-500 dark:text-gray-400">
-            ({tasks.length})
+          <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
+            {tasks.length}
           </span>
         </div>
       )}
@@ -119,7 +119,7 @@ export function SortableTaskList({
           items={tasks.map((task) => task.id)}
           strategy={verticalListSortingStrategy}
         >
-          <div className="space-y-2">
+          <div className="space-y-0">
             {tasks.map((task) => (
               <DraggableTaskItem key={task.id} task={task} />
             ))}
@@ -134,7 +134,7 @@ export function SortableTaskList({
         >
           {activeTask ? (
             <div
-              className="shadow-2xl bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700 rotate-2 scale-105 opacity-95"
+              className="shadow-2xl bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 opacity-95"
               style={{
                 cursor: "grabbing",
                 transformOrigin: "0 0",

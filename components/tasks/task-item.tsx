@@ -4,9 +4,10 @@ import { useState } from "react";
 import { Task } from "@/lib/types";
 import { format, isToday, isPast } from "date-fns";
 import { useTodoStore } from "@/lib/store";
-import { Checkbox } from "@/components/ui/checkbox";
+
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { CustomCheckbox } from "@/components/ui/custom-checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { TaskDetailDialog } from "@/components/tasks/task-detail-dialog";
 import {
@@ -100,217 +101,116 @@ export function TaskItem({ task, isDragging = false }: TaskItemProps) {
     );
   };
 
+  const getPriorityBorderColor = (priority: string, completed: boolean) => {
+    const colors = {
+      low: completed ? "border-green-400" : "border-green-200",
+      medium: completed ? "border-yellow-400" : "border-yellow-200",
+      high: completed ? "border-orange-400" : "border-orange-200",
+      urgent: completed ? "border-red-400" : "border-red-200",
+    };
+    return colors[priority as keyof typeof colors] || "border-gray-200";
+  };
+
   return (
     <>
       <div
         className={cn(
-          "relative flex items-start gap-2 md:gap-4 p-2 md:p-4 rounded-2xl border transition-all duration-200",
-          !isDragging && "cursor-pointer hover:shadow-md", // Only add cursor and hover effects when not dragging
-          task.completed
-            ? "bg-gray-50/50 dark:bg-gray-800/50 border-gray-200/50 dark:border-gray-700/50"
-            : "bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700",
-          "w-full max-w-none",
-          isDragging && "pointer-events-none" // Disable pointer events during drag
+          "relative flex items-center gap-3 p-3 border-b border-gray-200 dark:border-gray-800 transition-colors duration-200",
+          !isDragging &&
+            "cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50",
+          task.completed && "opacity-50",
+          "w-full max-w-none bg-white dark:bg-gray-900",
+          isDragging && "pointer-events-none"
         )}
         onClick={!isDragging ? () => setShowDetailDialog(true) : undefined}
       >
         {/* Emoji burst animation */}
         {showEmojiBurst && (
-          <div className="absolute top-2 left-2 text-2xl animate-emoji-burst pointer-events-none">
+          <div className="absolute top-2 left-2 text-xl animate-emoji-burst pointer-events-none">
             🎉
           </div>
         )}
 
-        <Checkbox
-          checked={task.completed}
-          onCheckedChange={handleToggleCompletion}
-          onClick={(e) => e.stopPropagation()}
-          className={cn(
-            "transition-all duration-200 flex-shrink-0 mt-0.5",
-            task.completed && "animate-task-complete"
-          )}
-        />
+        <div className="flex-shrink-0">
+          <CustomCheckbox
+            checked={task.completed}
+            onChange={handleToggleCompletion}
+            onClick={(e) => e.stopPropagation()}
+            size="lg"
+            className={cn(
+              getPriorityBorderColor(task.priority, task.completed)
+            )}
+          />
+        </div>
 
         <div className="flex-1 min-w-0">
-          <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-1 md:gap-2">
-            <div className="flex-1 min-w-0">
-              <div className="flex items-start gap-2 mb-1">
-                <h3
-                  className={cn(
-                    "text-sm md:text-base font-medium leading-tight transition-all duration-200",
-                    task.completed &&
-                      "line-through text-gray-500 dark:text-gray-400"
-                  )}
-                >
-                  {task.title}
-                </h3>
-                {task.aiGenerated && (
-                  <Sparkles className="h-3 w-3 md:h-4 md:w-4 text-purple-500 flex-shrink-0 mt-0.5" />
-                )}
-                {subtasks.length > 0 && (
-                  <Badge variant="outline" className="text-xs px-1 py-0">
-                    <List className="h-3 w-3 mr-1" />
-                    {completedSubtasks}/{subtasks.length}
-                  </Badge>
-                )}
-              </div>
-
-              {task.description && (
-                <p className="text-xs md:text-sm text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">
-                  {task.description}
-                </p>
+          {/* Line 1: Title and AI sparkle */}
+          <div className="flex items-center gap-2">
+            <h3
+              className={cn(
+                "font-medium leading-tight text-gray-800 dark:text-gray-200 truncate",
+                task.completed &&
+                  "line-through text-gray-500 dark:text-gray-400"
               )}
+            >
+              {task.title}
+            </h3>
+            {task.aiGenerated && (
+              <Sparkles className="h-3.5 w-3.5 text-purple-500 flex-shrink-0" />
+            )}
+          </div>
 
-              {/* Mobile: Show badges below description */}
-              <div className="flex flex-wrap items-center gap-1 md:gap-2 mt-1 md:mt-2 sm:hidden">
-                {task.category && (
-                  <Badge
-                    variant="secondary"
-                    className={cn(
-                      "text-xs px-1.5 py-0.5 rounded-lg font-medium",
-                      getCategoryColor(task.category)
-                    )}
-                  >
-                    {task.category}
-                  </Badge>
-                )}
-
+          {/* Line 2: Date and Priority */}
+          {(task.dueDate || task.category) && (
+            <div className="flex items-center justify-between mt-1">
+              <div className="flex items-center gap-3">
                 {task.dueDate && (
-                  <Badge
-                    variant="outline"
-                    className={cn(
-                      "text-xs px-1.5 py-0.5 rounded-lg flex items-center gap-1 font-medium",
-                      isPastDue
-                        ? "bg-red-50 text-red-600 border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800"
-                        : isToday_
-                        ? "bg-blue-50 text-blue-600 border-blue-200 dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-800"
-                        : "bg-gray-50 text-gray-600 border-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700"
-                    )}
-                  >
-                    {isPastDue ? (
-                      <AlertTriangle className="h-3 w-3" />
-                    ) : (
-                      <CalendarDays className="h-3 w-3" />
-                    )}
-                    {format(new Date(task.dueDate), "MMM d")}
-                  </Badge>
+                  <div className="flex items-center gap-1.5">
+                    <CalendarDays
+                      className={cn(
+                        "h-3.5 w-3.5",
+                        isPastDue
+                          ? "text-red-500"
+                          : "text-gray-500 dark:text-gray-400"
+                      )}
+                    />
+                    <span
+                      className={cn(
+                        "text-xs font-medium",
+                        isPastDue
+                          ? "text-red-500"
+                          : "text-gray-600 dark:text-gray-300"
+                      )}
+                    >
+                      {format(new Date(task.dueDate), "MMM d")}
+                    </span>
+                  </div>
                 )}
-
-                <div
-                  className={cn(
-                    "w-2 h-2 rounded-full flex-shrink-0",
-                    getPriorityColor(task.priority)
-                  )}
-                />
               </div>
-            </div>
-
-            {/* Desktop: Show badges and menu on the right */}
-            <div className="hidden sm:flex items-center gap-2 flex-shrink-0">
               {task.category && (
                 <Badge
                   variant="secondary"
                   className={cn(
-                    "text-xs px-2 py-1 rounded-lg font-medium",
+                    "text-xs font-medium px-2 py-0.5 rounded-full",
                     getCategoryColor(task.category)
                   )}
                 >
                   {task.category}
                 </Badge>
               )}
-
-              {task.dueDate && (
-                <Badge
-                  variant="outline"
-                  className={cn(
-                    "text-xs px-2 py-1 rounded-lg flex items-center gap-1 font-medium",
-                    isPastDue
-                      ? "bg-red-50 text-red-600 border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800"
-                      : isToday_
-                      ? "bg-blue-50 text-blue-600 border-blue-200 dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-800"
-                      : "bg-gray-50 text-gray-600 border-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700"
-                  )}
-                >
-                  {isPastDue ? (
-                    <AlertTriangle className="h-3 w-3" />
-                  ) : (
-                    <CalendarDays className="h-3 w-3" />
-                  )}
-                  {format(new Date(task.dueDate), "MMM d")}
-                </Badge>
-              )}
-
-              <div
-                className={cn(
-                  "w-2 h-2 rounded-full flex-shrink-0",
-                  getPriorityColor(task.priority)
-                )}
-              />
-
-              <DropdownMenu>
-                <DropdownMenuTrigger
-                  asChild
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-7 w-7 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 flex-shrink-0"
-                  >
-                    <MoreHorizontal className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent
-                  align="end"
-                  className="w-40 rounded-xl border-gray-200/50 dark:border-gray-700/50 shadow-lg"
-                >
-                  <DropdownMenuItem
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setShowDetailDialog(true);
-                    }}
-                    className="rounded-lg"
-                  >
-                    <Eye className="mr-2 h-4 w-4" />
-                    View Details
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setShowEditDialog(true);
-                    }}
-                    className="rounded-lg"
-                  >
-                    <Edit className="mr-2 h-4 w-4" />
-                    Edit
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDelete();
-                    }}
-                    className="text-red-600 focus:text-red-600 dark:text-red-400 dark:focus:text-red-400 rounded-lg"
-                  >
-                    <Trash2 className="mr-2 h-4 w-4" />
-                    Delete
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
             </div>
-          </div>
+          )}
         </div>
 
-        {/* Mobile: Show menu button at bottom right */}
-        <div className="sm:hidden absolute top-2 right-2">
+        <div className="flex-shrink-0 -mr-1">
           <DropdownMenu>
             <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-7 w-7 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 flex-shrink-0"
+                className="h-8 w-8 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700/60"
               >
-                <MoreHorizontal className="h-4 w-4" />
+                <MoreHorizontal className="h-4 w-4 text-gray-500 dark:text-gray-400" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent
