@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -67,6 +67,8 @@ function AddTaskForm({
 }) {
   const { addTask, categories } = useTodoStore();
   const { toast } = useToast();
+  const titleInputRef = useRef<HTMLInputElement>(null);
+  const formRef = useRef<HTMLFormElement>(null);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -100,9 +102,71 @@ function AddTaskForm({
     onDone();
   };
 
+  // Force submit function that can be called from anywhere
+  const forceSubmit = () => {
+    form.handleSubmit(onSubmit)();
+  };
+
+  // Handle keyboard events to ensure Enter submits the form
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      // Don't submit if we're in a textarea and want to add a new line
+      if (e.target instanceof HTMLTextAreaElement) {
+        return;
+      }
+
+      // Don't submit if a popover or select is open
+      const openPopovers = document.querySelectorAll('[data-state="open"]');
+      if (openPopovers.length > 0) {
+        return;
+      }
+
+      e.preventDefault();
+      e.stopPropagation();
+      forceSubmit();
+    }
+  };
+
+  // Specific handler for title input with more aggressive approach
+  const handleTitleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      e.stopPropagation();
+
+      // Check if title is not empty (basic validation)
+      const titleValue = e.currentTarget.value.trim();
+      if (titleValue) {
+        forceSubmit();
+      } else {
+        // Focus stays on title if empty
+        e.currentTarget.focus();
+      }
+    }
+  };
+
+  // Focus title input when dialog opens
+  useEffect(() => {
+    if (titleInputRef.current) {
+      const timer = setTimeout(() => {
+        titleInputRef.current?.focus();
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, []);
+
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
+      <form
+        ref={formRef}
+        onSubmit={form.handleSubmit(onSubmit)}
+        className="space-y-4 py-4"
+        onKeyDown={(e) => {
+          // Prevent default form submission on Enter
+          if (e.key === "Enter" && e.target !== e.currentTarget) {
+            e.preventDefault();
+          }
+        }}
+      >
         <FormField
           control={form.control}
           name="title"
@@ -110,7 +174,13 @@ function AddTaskForm({
             <FormItem>
               <FormLabel>Task Title</FormLabel>
               <FormControl>
-                <Input placeholder="What needs to be done?" {...field} />
+                <Input
+                  {...field}
+                  ref={titleInputRef}
+                  placeholder="What needs to be done?"
+                  onKeyDown={handleTitleKeyDown}
+                  autoComplete="off"
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -129,8 +199,18 @@ function AddTaskForm({
                   className="resize-none"
                   rows={3}
                   {...field}
+                  onKeyDown={(e) => {
+                    // Allow Enter for new lines in textarea, but Ctrl+Enter or Cmd+Enter submits
+                    if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+                      e.preventDefault();
+                      forceSubmit();
+                    }
+                  }}
                 />
               </FormControl>
+              <FormDescription className="text-xs">
+                Press Ctrl+Enter (or Cmd+Enter) to submit while in description
+              </FormDescription>
               <FormMessage />
             </FormItem>
           )}
@@ -152,6 +232,7 @@ function AddTaskForm({
                           "w-full pl-3 text-left font-normal",
                           !field.value && "text-muted-foreground"
                         )}
+                        onKeyDown={handleKeyDown}
                       >
                         {field.value ? (
                           format(field.value, "PPP")
@@ -193,7 +274,7 @@ function AddTaskForm({
                   defaultValue={field.value}
                 >
                   <FormControl>
-                    <SelectTrigger>
+                    <SelectTrigger onKeyDown={handleKeyDown}>
                       <SelectValue placeholder="Select priority" />
                     </SelectTrigger>
                   </FormControl>
@@ -246,7 +327,7 @@ function AddTaskForm({
                 value={field.value || "none"}
               >
                 <FormControl>
-                  <SelectTrigger>
+                  <SelectTrigger onKeyDown={handleKeyDown}>
                     <SelectValue placeholder="Select a category" />
                   </SelectTrigger>
                 </FormControl>
