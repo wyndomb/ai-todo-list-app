@@ -521,15 +521,22 @@ export default function LandingPage() {
             </div>
           </div>
 
-          {/* Logo positioned in bottom right */}
+          {/* Logo positioned in bottom right with hyperlink */}
           <div className="absolute bottom-4 right-4 opacity-60 hover:opacity-80 transition-opacity">
-            <Image
-              src="/Black Circle 360x360.png"
-              alt="Powered by Bolt"
-              width={48}
-              height={48}
-              className="rounded-full"
-            />
+            <a 
+              href="https://bolt.new/" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="block"
+            >
+              <Image
+                src="/Black Circle 360x360.png"
+                alt="Powered by Bolt"
+                width={48}
+                height={48}
+                className="rounded-full"
+              />
+            </a>
           </div>
         </footer>
       </div>
