@@ -56,7 +56,7 @@ export function SortableTaskList({
   const isMobile = useMobile();
 
   // Configure sensors with mobile-friendly settings
-  const mobileDelay = 100; // Balanced delay that prevents accidental drags
+  const mobileDelay = 200; // Balanced delay that prevents accidental drags
 
   const sensors = useSensors(
     // Touch sensor specifically for mobile devices
