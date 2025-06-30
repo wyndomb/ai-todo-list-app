@@ -55,26 +55,17 @@ export function SortableTaskList({
   const [activeTask, setActiveTask] = useState<Task | null>(null);
   const isMobile = useMobile();
 
-  // Configure sensors with mobile-friendly settings
-  const mobileDelay = 200; // Balanced delay that prevents accidental drags
-
+  // Configure sensors to allow scrolling on mobile
   const sensors = useSensors(
-    // Touch sensor specifically for mobile devices
-    useSensor(TouchSensor, {
-      activationConstraint: {
-        delay: isMobile ? mobileDelay : 0,
-        tolerance: 8,
-      },
-    }),
-    // Pointer sensor with mobile-specific constraints
     useSensor(PointerSensor, {
       activationConstraint: isMobile
         ? {
-            delay: mobileDelay,
-            tolerance: 8,
+            // On mobile: require longer hold AND minimal movement to distinguish from scroll
+            delay: 300,
+            tolerance: 20, // Allow more movement during delay to account for scrolling
           }
         : {
-            // Desktop behavior - immediate drag with small distance threshold
+            // Desktop: immediate drag with small distance
             distance: 3,
           },
     }),

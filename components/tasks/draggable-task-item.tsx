@@ -78,7 +78,11 @@ export function DraggableTaskItem({
       ref={setNodeRef}
       style={style}
       className={cn(
-        "group relative touch-none select-none",
+        "group relative select-none",
+        // Only apply touch-none when actually dragging
+        isCurrentlyDragging && "touch-none",
+        // On mobile, allow normal touch behavior when not dragging
+        isMobile && !isCurrentlyDragging && "touch-auto",
         isCurrentlyDragging && "z-50 opacity-40 dragging"
       )}
       data-dnd-kit-dragging={isCurrentlyDragging}
