@@ -80,12 +80,13 @@ export default function LandingPage() {
               </Badge>
               
               <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-gray-900 dark:text-gray-100 mb-6 leading-tight">
-                Stop Forgetting.
-                <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent block mt-2"> Start Achieving. </span>
+                Quantify Your Progress.
+                <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent block mt-2"> Celebrate Your Wins. </span>
+                <span className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl block mt-4">Every Single Week.</span>
               </h1>
               
               <p className="text-lg sm:text-xl md:text-2xl text-gray-600 dark:text-gray-400 mb-8 max-w-3xl mx-auto leading-relaxed">
-                The only task manager that learns your habits, predicts your needs, and helps you accomplish 3x more in half the time.
+                The intelligent companion that helps you clearly see your weekly accomplishments, understand your productivity patterns, and achieve more.
               </p>
 
               <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-12">
@@ -134,7 +135,7 @@ export default function LandingPage() {
           <div className="container mx-auto px-4 lg:px-6">
             <div className="text-center mb-12">
               <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 dark:text-gray-100 mb-4">
-                Join 50,000+ productive people worldwide
+                Join 50,000+ people who know what they get done
               </h2>
               <div className="flex flex-col sm:flex-row items-center justify-center gap-6 sm:gap-8 text-gray-600 dark:text-gray-400">
                 <div className="flex items-center gap-2">
@@ -150,7 +151,7 @@ export default function LandingPage() {
                 <div className="flex items-center gap-2">
                   <TrendingUp className="h-5 w-5 text-green-500" />
                   <span className="font-semibold">3x</span>
-                  <span>Productivity Boost</span>
+                  <span>Weekly Productivity Boost</span>
                 </div>
               </div>
             </div>
@@ -162,62 +163,62 @@ export default function LandingPage() {
           <div className="container mx-auto px-4 lg:px-6">
             <div className="text-center mb-16">
               <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-900 dark:text-gray-100 mb-4">
-                Everything you need to stay on top
+                Everything you need to track your weekly wins
               </h2>
               <p className="text-lg sm:text-xl text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
-                Powerful features designed to eliminate overwhelm and help you focus on what truly matters.
+                Powerful features designed to help you see exactly what you accomplish each week and celebrate your progress.
               </p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
-              {/* AI Assistant */}
+              {/* AI Weekly Insights */}
               <Card className="group hover:shadow-xl transition-all duration-300 border-0 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm p-6">
                 <CardHeader className="p-0 mb-4">
                   <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                     <BrainCircuit className="h-6 w-6 text-white" />
                   </div>
-                  <CardTitle className="text-xl">AI That Knows You</CardTitle>
+                  <CardTitle className="text-xl">AI for Weekly Insights</CardTitle>
                   <CardDescription className="text-base">
-                    Your personal productivity coach that learns your patterns and suggests the perfect next action.
+                    Get personalized insights about your weekly patterns, productivity trends, and accomplishment highlights.
                   </CardDescription>
                 </CardHeader>
               </Card>
 
-              {/* Smart Scheduling */}
+              {/* Weekly Goal Tracking */}
               <Card className="group hover:shadow-xl transition-all duration-300 border-0 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm p-6">
                 <CardHeader className="p-0 mb-4">
                   <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                    <Calendar className="h-6 w-6 text-white" />
+                    <Target className="h-6 w-6 text-white" />
                   </div>
-                  <CardTitle className="text-xl">Never Miss a Deadline</CardTitle>
+                  <CardTitle className="text-xl">Weekly Goal Tracking</CardTitle>
                   <CardDescription className="text-base">
-                    Smart scheduling that automatically prioritizes your tasks and prevents last-minute rushes.
+                    Set weekly goals and track your progress with smart reminders that help you stay on course.
                   </CardDescription>
                 </CardHeader>
               </Card>
 
-              {/* Analytics */}
+              {/* Weekly Productivity Report */}
               <Card className="group hover:shadow-xl transition-all duration-300 border-0 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm p-6">
                 <CardHeader className="p-0 mb-4">
                   <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-emerald-500 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                     <BarChart3 className="h-6 w-6 text-white" />
                   </div>
-                  <CardTitle className="text-xl">See Your Progress</CardTitle>
+                  <CardTitle className="text-xl">Your Weekly Productivity Report</CardTitle>
                   <CardDescription className="text-base">
-                    Beautiful analytics that show exactly where your time goes and how to optimize it.
+                    Beautiful weekly summaries that show your accomplishments, patterns, and areas for improvement.
                   </CardDescription>
                 </CardHeader>
               </Card>
 
-              {/* Task Management */}
+              {/* Organize for Weekly Success */}
               <Card className="group hover:shadow-xl transition-all duration-300 border-0 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm p-6">
                 <CardHeader className="p-0 mb-4">
                   <div className="w-12 h-12 bg-gradient-to-r from-orange-500 to-red-500 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                    <Target className="h-6 w-6 text-white" />
+                    <Calendar className="h-6 w-6 text-white" />
                   </div>
-                  <CardTitle className="text-xl">Effortless Organization</CardTitle>
+                  <CardTitle className="text-xl">Organize for Weekly Success</CardTitle>
                   <CardDescription className="text-base">
-                    Drag, drop, categorize, and prioritize with an interface so intuitive it feels like magic.
+                    Plan your week with intuitive tools that help you organize tasks and achieve your weekly goals.
                   </CardDescription>
                 </CardHeader>
               </Card>
@@ -230,7 +231,7 @@ export default function LandingPage() {
                   </div>
                   <CardTitle className="text-xl">Always in Sync</CardTitle>
                   <CardDescription className="text-base">
-                    Start on your phone, continue on your laptop. Your tasks follow you everywhere, instantly.
+                    Track your weekly progress anywhere. Your accomplishments sync instantly across all devices.
                   </CardDescription>
                 </CardHeader>
               </Card>
@@ -243,7 +244,7 @@ export default function LandingPage() {
                   </div>
                   <CardTitle className="text-xl">Bank-Level Security</CardTitle>
                   <CardDescription className="text-base">
-                    Your data is encrypted and protected with the same security standards as your bank account.
+                    Your weekly accomplishments and data are protected with enterprise-grade security.
                   </CardDescription>
                 </CardHeader>
               </Card>
@@ -259,7 +260,7 @@ export default function LandingPage() {
                 What our users are saying
               </h2>
               <p className="text-lg sm:text-xl text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
-                Real stories from people who transformed their productivity with What Did You Get Done This Week?.
+                Real stories from people who transformed their weekly productivity and started celebrating their accomplishments.
               </p>
             </div>
 
@@ -273,7 +274,7 @@ export default function LandingPage() {
                     ))}
                   </div>
                   <p className="text-gray-600 dark:text-gray-400 mb-6 text-base leading-relaxed">
-                    "I went from constantly missing deadlines to being the most organized person on my team. This app literally changed my career."
+                    "I finally know what I accomplish each week! This app helped me realize I was getting way more done than I thought. It's incredibly motivating."
                   </p>
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
@@ -295,7 +296,7 @@ export default function LandingPage() {
                     ))}
                   </div>
                   <p className="text-gray-600 dark:text-gray-400 mb-6 text-base leading-relaxed">
-                    "The AI suggestions are scary good. It's like having a personal assistant who knows exactly what I need to do next."
+                    "The weekly insights are amazing. I can see my productivity patterns and celebrate my wins. It's like having a personal coach cheering me on."
                   </p>
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-gradient-to-r from-green-500 to-teal-500 rounded-full flex items-center justify-center">
@@ -317,7 +318,7 @@ export default function LandingPage() {
                     ))}
                   </div>
                   <p className="text-gray-600 dark:text-gray-400 mb-6 text-base leading-relaxed">
-                    "Finally, a todo app that doesn't make me feel overwhelmed. The design is beautiful and it actually helps me get things done."
+                    "This completely changed how I think about productivity. Instead of feeling overwhelmed, I celebrate what I get done each week. Game changer!"
                   </p>
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
@@ -342,7 +343,7 @@ export default function LandingPage() {
                 Simple, transparent pricing
               </h2>
               <p className="text-lg sm:text-xl text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
-                Start free, upgrade when you're ready. No hidden fees, no surprises.
+                Start tracking your weekly wins for free. Upgrade when you're ready for advanced insights.
               </p>
             </div>
 
@@ -351,7 +352,7 @@ export default function LandingPage() {
               <Card className="border-2 border-gray-200 dark:border-gray-700 p-8">
                 <CardHeader className="p-0 mb-6">
                   <CardTitle className="text-2xl">Free Forever</CardTitle>
-                  <CardDescription className="text-lg">Perfect for getting started</CardDescription>
+                  <CardDescription className="text-lg">Perfect for tracking your weekly wins</CardDescription>
                   <div className="mt-4">
                     <span className="text-4xl font-bold">$0</span>
                     <span className="text-gray-500 dark:text-gray-400">/month</span>
@@ -361,11 +362,11 @@ export default function LandingPage() {
                   <ul className="space-y-3 mb-8">
                     <li className="flex items-center gap-3">
                       <CheckCircle2 className="h-5 w-5 text-green-500" />
-                      <span>Up to 100 tasks</span>
+                      <span>Track unlimited weekly accomplishments</span>
                     </li>
                     <li className="flex items-center gap-3">
                       <CheckCircle2 className="h-5 w-5 text-green-500" />
-                      <span>Basic AI suggestions</span>
+                      <span>Basic weekly insights</span>
                     </li>
                     <li className="flex items-center gap-3">
                       <CheckCircle2 className="h-5 w-5 text-green-500" />
@@ -373,7 +374,7 @@ export default function LandingPage() {
                     </li>
                     <li className="flex items-center gap-3">
                       <CheckCircle2 className="h-5 w-5 text-green-500" />
-                      <span>Basic analytics</span>
+                      <span>Weekly progress reports</span>
                     </li>
                   </ul>
                   <Button 
@@ -393,7 +394,7 @@ export default function LandingPage() {
                 </Badge>
                 <CardHeader className="p-0 mb-6">
                   <CardTitle className="text-2xl">Pro</CardTitle>
-                  <CardDescription className="text-lg">For power users and teams</CardDescription>
+                  <CardDescription className="text-lg">For advanced weekly tracking and insights</CardDescription>
                   <div className="mt-4">
                     <span className="text-4xl font-bold">$9</span>
                     <span className="text-gray-500 dark:text-gray-400">/month</span>
@@ -403,19 +404,19 @@ export default function LandingPage() {
                   <ul className="space-y-3 mb-8">
                     <li className="flex items-center gap-3">
                       <CheckCircle2 className="h-5 w-5 text-green-500" />
-                      <span>Unlimited tasks</span>
+                      <span>Everything in Free</span>
                     </li>
                     <li className="flex items-center gap-3">
                       <CheckCircle2 className="h-5 w-5 text-green-500" />
-                      <span>Advanced AI coaching</span>
+                      <span>Advanced AI weekly coaching</span>
                     </li>
                     <li className="flex items-center gap-3">
                       <CheckCircle2 className="h-5 w-5 text-green-500" />
-                      <span>Team collaboration</span>
+                      <span>Team weekly collaboration</span>
                     </li>
                     <li className="flex items-center gap-3">
                       <CheckCircle2 className="h-5 w-5 text-green-500" />
-                      <span>Advanced analytics</span>
+                      <span>Detailed productivity analytics</span>
                     </li>
                     <li className="flex items-center gap-3">
                       <CheckCircle2 className="h-5 w-5 text-green-500" />
@@ -438,10 +439,10 @@ export default function LandingPage() {
         <section className="py-16 sm:py-20 bg-gradient-to-r from-blue-600 to-purple-600">
           <div className="container mx-auto px-4 lg:px-6 text-center">
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-4">
-              Ready to 3x your productivity?
+              Ready to clearly see your weekly wins?
             </h2>
             <p className="text-lg sm:text-xl text-blue-100 mb-8 max-w-2xl mx-auto">
-              Join thousands of productive people who stopped procrastinating and started achieving their goals.
+              Join thousands of productive people who stopped procrastinating and started celebrating their weekly accomplishments.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
               <Button 
@@ -479,7 +480,7 @@ export default function LandingPage() {
                   <h3 className="text-white font-semibold">What Did You Get Done This Week?</h3>
                 </div>
                 <p className="text-sm">
-                  The intelligent task manager that helps you accomplish more with less effort.
+                  The intelligent task manager that helps you clearly see what you get done each week.
                 </p>
               </div>
               

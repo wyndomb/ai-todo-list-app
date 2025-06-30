@@ -12,8 +12,8 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: 'AI-Powered Todo List',
-  description: 'A smart todo list application with AI capabilities to enhance your productivity',
+  title: 'What Did You Get Done This Week?',
+  description: 'Track your weekly accomplishments and boost your productivity with AI-powered insights.',
 };
 
 export default function RootLayout({
