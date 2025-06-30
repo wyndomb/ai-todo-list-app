@@ -23,7 +23,7 @@ export function AuthGuard({
       if (requireAuth && !user) {
         router.push(redirectTo);
       } else if (!requireAuth && user) {
-        router.push('/');
+        router.push('/dashboard'); // Updated to redirect to dashboard
       }
     }
   }, [user, loading, requireAuth, redirectTo, router]);
