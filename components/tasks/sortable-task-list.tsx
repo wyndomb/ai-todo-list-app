@@ -26,6 +26,7 @@ import { Task } from "@/lib/types";
 import { useTodoStore } from "@/lib/store";
 import { DraggableTaskItem } from "@/components/tasks/draggable-task-item";
 import { TaskItem } from "@/components/tasks/task-item";
+import { useMobile } from "@/hooks/use-mobile";
 
 interface SortableTaskListProps {
   tasks: Task[];
@@ -51,12 +52,21 @@ export function SortableTaskList({
 }: SortableTaskListProps) {
   const { reorderTasks } = useTodoStore();
   const [activeTask, setActiveTask] = useState<Task | null>(null);
+  const isMobile = useMobile();
 
+  // Configure sensors based on device type
   const sensors = useSensors(
     useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 3,
-      },
+      activationConstraint: isMobile
+        ? {
+            // On mobile: require 50ms hold time before drag starts
+            delay: 50,
+            tolerance: 5, // Allow 5px movement during the delay
+          }
+        : {
+            // On desktop: immediate drag with small distance threshold
+            distance: 3,
+          },
     }),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
