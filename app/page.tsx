@@ -41,7 +41,7 @@ export default function LandingPage() {
                 <Sparkles className="h-5 w-5 text-white" />
               </div>
               <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">
-                AI Todo
+                What Did You Get Done This Week?
               </h1>
             </div>
             
@@ -259,7 +259,7 @@ export default function LandingPage() {
                 What our users are saying
               </h2>
               <p className="text-lg sm:text-xl text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
-                Real stories from people who transformed their productivity with AI Todo.
+                Real stories from people who transformed their productivity with What Did You Get Done This Week?.
               </p>
             </div>
 
@@ -476,7 +476,7 @@ export default function LandingPage() {
                   <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg flex items-center justify-center">
                     <Sparkles className="h-4 w-4 text-white" />
                   </div>
-                  <h3 className="text-white font-semibold">AI Todo</h3>
+                  <h3 className="text-white font-semibold">What Did You Get Done This Week?</h3>
                 </div>
                 <p className="text-sm">
                   The intelligent task manager that helps you accomplish more with less effort.
@@ -515,7 +515,7 @@ export default function LandingPage() {
             </div>
             
             <div className="border-t border-gray-800 mt-8 pt-8 text-center text-sm">
-              <p>&copy; {new Date().getFullYear()} AI Todo. All rights reserved.</p>
+              <p>&copy; {new Date().getFullYear()} What Did You Get Done This Week?. All rights reserved.</p>
             </div>
           </div>
         </footer>

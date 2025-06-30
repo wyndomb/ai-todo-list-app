@@ -80,7 +80,7 @@ export function Header({
         {/* Mobile: Show app title */}
         <div className="md:hidden flex-1">
           <h1 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-            AI Todo
+            What Did You Get Done This Week?
           </h1>
         </div>
 

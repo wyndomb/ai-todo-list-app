@@ -155,7 +155,7 @@ export default function LoginPage() {
                   <Sparkles className="h-6 w-6 text-white" />
                 </div>
                 <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">
-                  AI Todo
+                  What Did You Get Done This Week?
                 </h1>
               </div>
               <h2 className="text-4xl font-bold text-gray-900 dark:text-gray-100 mb-4">
@@ -227,7 +227,7 @@ export default function LoginPage() {
                     <Sparkles className="h-5 w-5 text-white" />
                   </div>
                   <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-                    AI Todo
+                    What Did You Get Done This Week?
                   </h1>
                 </div>
                 <CardTitle className="text-2xl font-bold">Welcome</CardTitle>
