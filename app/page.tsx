@@ -24,6 +24,7 @@ import {
   TrendingUp
 } from 'lucide-react';
 import Link from 'next/link';
+import Image from 'next/image';
 
 export default function LandingPage() {
   const handleGetStarted = () => {
@@ -469,7 +470,7 @@ export default function LandingPage() {
         </section>
 
         {/* Footer */}
-        <footer className="py-12 bg-gray-900 text-gray-400">
+        <footer className="py-12 bg-gray-900 text-gray-400 relative">
           <div className="container mx-auto px-4 lg:px-6">
             <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
               <div>
@@ -518,6 +519,17 @@ export default function LandingPage() {
             <div className="border-t border-gray-800 mt-8 pt-8 text-center text-sm">
               <p>&copy; {new Date().getFullYear()} What Did You Get Done This Week?. All rights reserved.</p>
             </div>
+          </div>
+
+          {/* Logo positioned in bottom right */}
+          <div className="absolute bottom-4 right-4 opacity-60 hover:opacity-80 transition-opacity">
+            <Image
+              src="/Black Circle 360x360.png"
+              alt="Powered by Bolt"
+              width={48}
+              height={48}
+              className="rounded-full"
+            />
           </div>
         </footer>
       </div>
