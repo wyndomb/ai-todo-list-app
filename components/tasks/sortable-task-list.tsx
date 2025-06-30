@@ -6,6 +6,7 @@ import {
   closestCenter,
   KeyboardSensor,
   PointerSensor,
+  TouchSensor,
   useSensor,
   useSensors,
   DragEndEvent,
@@ -54,17 +55,26 @@ export function SortableTaskList({
   const [activeTask, setActiveTask] = useState<Task | null>(null);
   const isMobile = useMobile();
 
-  // Configure sensors based on device type
+  // Configure sensors with mobile-friendly settings
+  const mobileDelay = 100; // Balanced delay that prevents accidental drags
+
   const sensors = useSensors(
+    // Touch sensor specifically for mobile devices
+    useSensor(TouchSensor, {
+      activationConstraint: {
+        delay: isMobile ? mobileDelay : 0,
+        tolerance: 8,
+      },
+    }),
+    // Pointer sensor with mobile-specific constraints
     useSensor(PointerSensor, {
       activationConstraint: isMobile
         ? {
-            // On mobile: require 50ms hold time before drag starts
-            delay: 50,
-            tolerance: 5, // Allow 5px movement during the delay
+            delay: mobileDelay,
+            tolerance: 8,
           }
         : {
-            // On desktop: immediate drag with small distance threshold
+            // Desktop behavior - immediate drag with small distance threshold
             distance: 3,
           },
     }),

@@ -16,5 +16,13 @@ export function isMobileDevice(): boolean {
       navigator.userAgent
     );
 
-  return hasTouch && (isSmallScreen || isMobileUserAgent);
+  // Check if Chrome DevTools mobile simulation is active
+  const isDevToolsMobile =
+    (navigator as any).userAgentData?.mobile ||
+    window.screen.orientation !== undefined ||
+    window.orientation !== undefined;
+
+  // Return true if device has touch capability AND (small screen OR mobile user agent)
+  // OR if it's a small screen (for testing/DevTools)
+  return (hasTouch && (isSmallScreen || isMobileUserAgent)) || isSmallScreen;
 }
