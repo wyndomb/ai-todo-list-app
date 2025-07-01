@@ -61,33 +61,13 @@ export function TaskList({ tasks, selectedDate }: TaskListProps) {
       !isToday(new Date(task.dueDate))
   );
 
-  // Focus tasks - today's tasks and urgent tasks, but exclude overdue tasks
+  // Focus tasks - only today's tasks, exclude overdue tasks
   const focusTasks = parentTasks.filter(
     (task) =>
       !task.completed &&
       !overdueTasks.includes(task) && // Exclude tasks that are already in overdue
-      ((task.dueDate && isToday(new Date(task.dueDate))) ||
-        task.priority === "urgent")
-  );
-
-  const dueSoonTasks = parentTasks.filter(
-    (task) =>
-      !task.completed &&
-      !overdueTasks.includes(task) && // Exclude overdue tasks
-      !focusTasks.includes(task) && // Exclude focus tasks
       task.dueDate &&
-      isFuture(new Date(task.dueDate)) &&
-      !isToday(new Date(task.dueDate)) &&
-      new Date(task.dueDate) <= addDays(new Date(), 7)
-  );
-
-  const backlogTasks = parentTasks.filter(
-    (task) =>
-      !task.completed &&
-      !overdueTasks.includes(task) && // Exclude overdue tasks
-      !focusTasks.includes(task) && // Exclude focus tasks
-      !dueSoonTasks.includes(task) && // Exclude due soon tasks
-      (!task.dueDate || new Date(task.dueDate) > addDays(new Date(), 7))
+      isToday(new Date(task.dueDate))
   );
 
   const completedTasks = parentTasks.filter(
@@ -121,22 +101,6 @@ export function TaskList({ tasks, selectedDate }: TaskListProps) {
             tasks={sortTasksByOrder(focusTasks)}
             title="Focus for Today"
             emoji="⚡️"
-          />
-        )}
-
-        {dueSoonTasks.length > 0 && (
-          <SortableTaskList
-            tasks={sortTasksByOrder(dueSoonTasks)}
-            title="Due Soon"
-            emoji="⏳"
-          />
-        )}
-
-        {backlogTasks.length > 0 && (
-          <SortableTaskList
-            tasks={sortTasksByOrder(backlogTasks)}
-            title="Backlog"
-            emoji="🧠"
           />
         )}
 

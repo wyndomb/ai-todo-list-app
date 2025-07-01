@@ -9,13 +9,10 @@ import { MainLayout } from "@/components/layout/main-layout";
 export function Dashboard() {
   const { tasks } = useTodoStore();
 
-  // Filter tasks for today and overdue
+  // Filter tasks for today - simple date-based logic
   const today = new Date().toISOString().split("T")[0];
   const todayTasks = tasks.filter(
-    (task) =>
-      !task.parentId &&
-      (task.dueDate === today ||
-        (task.priority === "urgent" && !task.completed))
+    (task) => !task.parentId && task.dueDate === today
   );
 
   const completedTodayTasks = todayTasks.filter((t) => t.completed).length;

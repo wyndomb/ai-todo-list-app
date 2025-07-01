@@ -604,7 +604,8 @@ export const useTodoStore = create<TodoState>()((set, get) => ({
   },
 
   toggleTaskCompletion: async (id) => {
-    const task = get().tasks.find((t) => t.id === id);
+    const originalTasks = get().tasks;
+    const task = originalTasks.find((t) => t.id === id);
     if (!task) return;
 
     const now = new Date().toISOString();
@@ -653,32 +654,22 @@ export const useTodoStore = create<TodoState>()((set, get) => ({
         return;
       }
 
+      // Explicitly define the update object for Supabase
+      const supabaseUpdate = {
+        completed: updates.completed,
+        completed_at: updates.completedAt || null,
+      };
+
       const { error } = await supabase
         .from("tasks")
-        .update(taskToSupabaseFormat(updates, userId))
+        .update(supabaseUpdate)
         .eq("id", id)
         .eq("user_id", userId);
 
       if (error) {
         console.error("Error toggling task completion:", error);
-        console.error("Error details:", {
-          message: error.message,
-          code: error.code,
-          details: error.details,
-          hint: error.hint,
-        });
         // Revert optimistic update on error
-        set((state) => ({
-          tasks: state.tasks.map((t) =>
-            t.id === id
-              ? {
-                  ...t,
-                  completed: task.completed,
-                  completedAt: task.completedAt,
-                }
-              : t
-          ),
-        }));
+        set({ tasks: originalTasks });
         return;
       }
 
@@ -697,12 +688,6 @@ export const useTodoStore = create<TodoState>()((set, get) => ({
 
           if (subtaskError) {
             console.error("Error completing subtasks:", subtaskError);
-            console.error("Subtask error details:", {
-              message: subtaskError.message,
-              code: subtaskError.code,
-              details: subtaskError.details,
-              hint: subtaskError.hint,
-            });
             return;
           }
 
@@ -711,7 +696,7 @@ export const useTodoStore = create<TodoState>()((set, get) => ({
               t.parentId === id
                 ? { ...t, completed: true, completedAt: now }
                 : t.id === id
-                ? { ...t, ...updates }
+                ? { ...t, ...updates } // Ensure parent is also updated in local state
                 : t
             ),
           }));
@@ -720,17 +705,7 @@ export const useTodoStore = create<TodoState>()((set, get) => ({
     } catch (error) {
       console.error("Error toggling task completion:", error);
       // Revert optimistic update on error
-      set((state) => ({
-        tasks: state.tasks.map((t) =>
-          t.id === id
-            ? {
-                ...t,
-                completed: task.completed,
-                completedAt: task.completedAt,
-              }
-            : t
-        ),
-      }));
+      set({ tasks: originalTasks });
     }
   },
 
